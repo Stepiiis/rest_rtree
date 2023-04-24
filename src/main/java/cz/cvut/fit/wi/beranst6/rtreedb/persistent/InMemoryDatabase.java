@@ -4,6 +4,7 @@ import cz.cvut.fit.wi.beranst6.rtreedb.modules.RTreeNode;
 import cz.cvut.fit.wi.beranst6.rtreedb.modules.RTreeRegion;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 public class InMemoryDatabase implements DatabaseInterface {
@@ -15,7 +16,7 @@ public class InMemoryDatabase implements DatabaseInterface {
     }
 
     @Override
-    public void editBoundingBox(int id) {
+    public void updateBoundingBox(int id, Set<Integer> changedChildren) {
         database.get(id).updateMBR();
     }
 

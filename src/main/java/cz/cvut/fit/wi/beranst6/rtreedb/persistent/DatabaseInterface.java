@@ -4,6 +4,8 @@ package cz.cvut.fit.wi.beranst6.rtreedb.persistent;
 import cz.cvut.fit.wi.beranst6.rtreedb.modules.RTreeNode;
 import cz.cvut.fit.wi.beranst6.rtreedb.modules.RTreeRegion;
 
+import java.util.Set;
+
 public interface DatabaseInterface {
 
     /**
@@ -17,7 +19,7 @@ public interface DatabaseInterface {
     /**
      * updates MBR of the node
      */
-    void editBoundingBox(int idNode);
+    void updateBoundingBox(int idNode, Set<Integer> changedChildren);
     /**
      *  puts object in database, returns index of the object in the node
      */

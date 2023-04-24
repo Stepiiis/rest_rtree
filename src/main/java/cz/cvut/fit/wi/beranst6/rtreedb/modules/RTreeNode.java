@@ -1,19 +1,30 @@
 package cz.cvut.fit.wi.beranst6.rtreedb.modules;
 
 import cz.cvut.fit.wi.beranst6.rtreedb.config.Constants;
+import cz.cvut.fit.wi.beranst6.rtreedb.modules.utils.Coordinate;
+
+import java.util.Collection;
 
 public class RTreeNode {
     private RTreeRegion minimumBoundingRegion;
     private RTreeNode[] children = new RTreeNode[Constants.NODE_CAPACITY];
     private RTreeNode parent;
-    private int id;
-    private boolean isValid;
+    private final int id;
+
+    public boolean isChanged() {
+        return changed;
+    }
+
+    public void setChanged(boolean changed) {
+        this.changed = changed;
+    }
+
+    private boolean changed = false;
     private boolean isLeaf = true;
 
     public RTreeNode(int id, RTreeNode... children) {
         this.children = children;
         this.id = id;
-        this.isValid = true;
         updateMBR();
     }
 
@@ -64,12 +75,11 @@ public class RTreeNode {
         isLeaf=val;
     }
 
-    public void invalidate(){
-        this.isValid = false;
-    }
-
     public RTreeRegion getMbr() {
         return minimumBoundingRegion;
+    }
+    public Coordinate[] getMbrArr() {
+        return minimumBoundingRegion.getBoundingRect();
     }
 
     public RTreeNode getChildByIndex(int index) {
@@ -78,6 +88,14 @@ public class RTreeNode {
     public void deleteChildByIndex(int index) {
         this.children[index] = null;
         updateMBR();
+    }
+
+    public RTreeNode[] getChildren() {
+        return children;
+    }
+
+    public int getParentId() {
+        return parent.getId();
     }
 }
 

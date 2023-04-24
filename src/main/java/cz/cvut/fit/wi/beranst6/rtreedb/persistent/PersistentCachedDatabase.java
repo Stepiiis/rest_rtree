@@ -5,14 +5,16 @@ import cz.cvut.fit.wi.beranst6.rtreedb.modules.*;
 import cz.cvut.fit.wi.beranst6.rtreedb.modules.utils.Coordinate;
 import cz.cvut.fit.wi.beranst6.rtreedb.utils.IndexRecordInvalidException;
 
-import javax.management.modelmbean.InvalidTargetObjectTypeException;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.logging.Logger;
 
 import static cz.cvut.fit.wi.beranst6.rtreedb.config.Constants.*;
 
 public class PersistentCachedDatabase implements DatabaseInterface{
 
+    Logger LOGG = Logger.getLogger(PersistentCachedDatabase.class.getName());
     private final RTreeNode[] cachedDB;
     private final int cacheSize;
 
@@ -33,22 +35,21 @@ public class PersistentCachedDatabase implements DatabaseInterface{
     }
 
     @Override
-    public void editBoundingBox(int id) {
+    public void updateBoundingBox(int id, Set<Integer> changedChildren) {
         RTreeNode node = getNodeFromFile(id);
-        node.updateMBR();
         try {
-            updateNodeInDb(node);
+            updateNodeInDb(node,changedChildren);
         }catch(IndexRecordInvalidException e){
-            System.out.println("index file invalid");
+            LOGG.warning("Index file invalid. id:" +id + " dim: " + CURR_DIMENSION);
         }
     }
 
-    public boolean loadRecordHeaderFromFile(IndexRecord record, FileInputStream fis) throws IOException {
+    public boolean loadRecordHeaderFromFile(IndexRecord record, BufferedInputStream fis) throws IOException {
         byte[] data = new byte[Constants.INDEX_FILE_TOTAL_HEADER_SIZE];
         fis.read(data);
         record.setNodeCount(getIntegerFromByteArray(data, INDEX_HEADER_NODE_COUNT_POS));
         record.setStatusByte(data[INDEX_HEADER_STATUS_POS]);
-        if(!isNodeValid(record.getStatusByte()))
+        if(isNodeInvalid(record.getStatusByte()))
             return false;
         record.setHeaderSize(data[INDEX_HEADER_SIZE_POS]);
         record.setDimension(data[INDEX_HEADER_DIMENSION_POS]);
@@ -61,31 +62,92 @@ public class PersistentCachedDatabase implements DatabaseInterface{
         return true;
     }
 
-    public void updateNodeInDb(RTreeNode node) throws IndexRecordInvalidException {
+    // assumes that all child elements which have been changed are tagged
+    public void updateNodeInDb(RTreeNode node, Set<Integer> changedChildrenIds) throws IndexRecordInvalidException {
         String fileName = "index_"+CURR_DIMENSION+"_"+node.getId()+".bin";
         File file = new File(fileName);
-        try (FileInputStream fis = new FileInputStream(file)) {
-            IndexRecord record = new IndexRecord();
-            if(!loadRecordHeaderFromFile(record,fis))
-                throw new IndexRecordInvalidException("index stored in "  + fileName + " is invalid.");
-            // todo write new bounding box in header
-            byte[] data = new byte[(int) file.length() - INDEX_FILE_TOTAL_HEADER_SIZE];
-            fis.read(data);
-            for(int i = Constants.INDEX_FILE_TOTAL_HEADER_SIZE; i < data.length; i += Constants.INDEX_FILE_NODE_SIZE) {
-                int childId = getIntegerFromByteArray(data, i + CHILD_NODE_ID_POS);
-                if(childId != node.getId())
-                    continue;
-                int headSize = data[i+CHILD_NODE_HEADER_SIZE_POS];
-                try(FileOutputStream fos = new FileOutputStream(file)){
-                    // todo write node
-                }
-            };
+        byte[] fileData = new byte[(int) file.length() - INDEX_FILE_TOTAL_HEADER_SIZE]; // assumes standard header size
+        IndexRecord record = new IndexRecord();
+
+        // read header from file
+        try (BufferedInputStream fis = new BufferedInputStream(new FileInputStream(file))) {
+            if (!loadRecordHeaderFromFile(record, fis))
+                throw new IndexRecordInvalidException("index stored in " + fileName + " is invalid.");
+            record.setMbr(node.getMbr());
+            fis.read(fileData);
         } catch (FileNotFoundException e) {
-            System.out.println("File not found: " + fileName);
+            LOGG.info("File not found: " + fileName);
+            createNewRecord(node);
+            cachedDB[node.getId() % cacheSize] = node;
+            return;
         } catch (IOException e) {
-            System.out.println("Error reading file: " + fileName);
+            LOGG.severe("Error reading file: " + fileName);
+        }
+
+        try(BufferedOutputStream fos = new BufferedOutputStream (new FileOutputStream(file))){
+            putAllCordsFromCoordArray(record.getHeaderSize(), node.getMbrArr(), fos);
+            final int totalHeaderOffset = record.getHeaderSize()+record.getDimension()*COORDINATE_SIZE;
+            final int childNodeHeaderSize = fileData[totalHeaderOffset + CHILD_NODE_HEADER_SIZE_POS];
+            for (int i = totalHeaderOffset; i < fileData.length; i += Constants.INDEX_FILE_NODE_SIZE) {
+                int childId = getIntegerFromByteArray(fileData, i + CHILD_NODE_ID_POS);
+                if (!changedChildrenIds.contains(childId)) {
+                    continue;
+                }
+                changedChildrenIds.remove(childId);
+                putAllCordsFromCoordArray(childNodeHeaderSize, node.getChildByIndex(childId).getMbrArr(), fos);
+            }
+            if(changedChildrenIds.size() > 0 ){
+                for(int childId : changedChildrenIds){
+                    int offsetFromStart = record.getHeaderSize()+record.getNodeCount()*(record.getNodeSize() + childNodeHeaderSize);
+                    putAllCordsFromCoordArray(offsetFromStart, node.getChildByIndex(childId).getMbrArr(), fos);
+                    record.setNodeCount(record.getNodeCount()+1);
+                }
+                putNodeCount(record.getNodeCount(), fos);
+            }
+        } catch (FileNotFoundException e) {
+            LOGG.severe("File not found: " + fileName);
+            return;
+        } catch (IOException e) {
+            LOGG.severe("Error writing to file: " + fileName);
         }
         cachedDB[node.getId() % cacheSize] = node;
+    }
+
+    private void createNewRecord(RTreeNode node) {
+        String fileName = "index_"+CURR_DIMENSION+"_"+node.getId()+".bin";
+        try(BufferedOutputStream fos = new BufferedOutputStream (new FileOutputStream(fileName,true))){
+            writeHeaderOfFile(node,fos);
+            for(int i=0 ; i < node.getChildren().length ; i++)
+                writeChildNodeToFile(INDEX_HEADER_SIZE + (INDEX_FILE_NODE_SIZE * i), node.getChildren()[i], fos);
+        } catch (FileNotFoundException e) {
+            LOGG.severe("File could not be opened or created: " + fileName);
+            return;
+        } catch (IOException e) {
+            LOGG.severe("Error writing to file during creation rutine: " + fileName);
+        }
+    }
+
+    private void writeChildNodeToFile(int offset, RTreeNode child, BufferedOutputStream fos) throws IOException {
+        fos.write(new byte[] {(byte)1}, offset + CHILD_NODE_STATUS_POS, CHILD_NODE_STATUS_BYTES);
+        fos.write(getByteArrayFromInteger(child.getId()), offset + CHILD_NODE_ID_POS, CHILD_NODE_ID_SIZE);
+        fos.write(new byte[] { CHILD_NODE_HEADER_SIZE}, offset + CHILD_NODE_HEADER_SIZE_POS, 1);
+        putAllCordsFromCoordArray(offset+CHILD_NODE_HEADER_SIZE, child.getMbrArr(), fos);
+    }
+
+    private void writeHeaderOfFile(RTreeNode node, BufferedOutputStream fos) throws IOException{
+        fos.write(INDEX_HEADER_MAGIC, INDEX_HEADER_MAGIC_POS, INDEX_HEADER_MAGIC_BYTES);
+        fos.write(getByteArrayFromInteger(node.getChildren().length), INDEX_HEADER_NODE_COUNT_POS, INDEX_HEADER_NODE_COUNT_BYTES);
+        fos.write(new byte[] {(byte)1}, INDEX_HEADER_STATUS_POS, INDEX_HEADER_STATUS_BYTE_BYTES);
+        fos.write(new byte[] {INDEX_HEADER_SIZE}, INDEX_HEADER_SIZE_POS, INDEX_HEADER_SIZE_BYTES);
+        fos.write(new byte[] {CURR_DIMENSION}, INDEX_HEADER_DIMENSION_POS, INDEX_HEADER_DIMENSION_BYTES);
+        fos.write(new byte[] {CURR_MAX_CAPACITY}, INDEX_HEADER_NODE_CAPACITY_POS, INDEX_HEADER_NODE_CAPACITY_BYTES);
+        fos.write(getByteArrayFromInteger(INDEX_FILE_NODE_SIZE), INDEX_HEADER_NODE_SIZE_POS, INDEX_HEADER_NODE_SIZE_BYTES);
+        fos.write(getByteArrayFromInteger(node.getId()), INDEX_HEADER_ROOT_NODE_ID_POS, INDEX_HEADER_ROOT_NODE_ID_BYTES);
+        fos.write(getByteArrayFromInteger(node.getParentId()), INDEX_HEADER_PARENT_NODE_ID_POS, INDEX_HEADER_PARENT_NODE_ID_BYTES);
+    }
+
+    private void putNodeCount(int nodeCount, BufferedOutputStream fos) throws IOException {
+        fos.write(getByteArrayFromInteger(nodeCount), INDEX_HEADER_NODE_COUNT_POS, INDEX_HEADER_NODE_COUNT_BYTES);
     }
 
 
@@ -121,7 +183,7 @@ public class PersistentCachedDatabase implements DatabaseInterface{
             fis.read(data);
             ArrayList<RTreeNode> objects = new ArrayList<>();
             for(int i = Constants.INDEX_FILE_TOTAL_HEADER_SIZE; i< data.length; i += Constants.INDEX_FILE_NODE_SIZE) {
-                if(!isNodeValid(data[i])) continue;
+                if(isNodeInvalid(data[i])) continue;
                 int temp_id = getIntegerFromByteArray(data, i + CHILD_NODE_ID_POS);
                 int headSize = data[i+CHILD_NODE_HEADER_SIZE_POS];
                 RTreeRegion region = getAllCoordsInRegion(id, i + headSize, data);
@@ -138,8 +200,8 @@ public class PersistentCachedDatabase implements DatabaseInterface{
         return foundNode;
     }
 
-    private boolean isNodeValid(int statusByte){
-        return (statusByte & 0x01) == 0x01;
+    private boolean isNodeInvalid(int statusByte){
+        return (statusByte & 0x01) != 0x01;
     }
 
     private boolean isNodeInternal(int statusByte){
@@ -155,12 +217,15 @@ public class PersistentCachedDatabase implements DatabaseInterface{
         return getIntegerFromByteArray(data, 4);
     }
 
-    private void putAllCordsFromRegion(int blockStart, RTreeNode node, FileOutputStream fos) throws IOException {
-        Coordinate[] coords = node.getMbr().getBoundingRect();
-        for(int u = 0; u< CURR_DIMENSION; ++u){
-            for(int i = 0; i < CURR_DIMENSION; ++i){
-                fos.write(getByteArrFromDouble(coords[u].getCoordinates()[i]), blockStart + u * i * COORDINATE_SIZE, Double.BYTES);
-            }
+    private void putAllCordsFromCoordArray(int blockStart, Coordinate[] coords, BufferedOutputStream fos) throws IOException {
+        for(int u = 0; u < CURR_DIMENSION; ++u){
+           putCoordinate(blockStart + u * COORDINATE_SIZE, coords[u], fos);
+        }
+    }
+
+    private void putCoordinate(int blockStart, Coordinate coord, BufferedOutputStream fos) throws IOException {
+        for(int i = 0; i < CURR_DIMENSION; ++i){
+            fos.write(getByteArrayFromDouble(coord.getCoordinates()[i]), blockStart + i * COORDINATE_SIZE, Double.BYTES);
         }
     }
 
@@ -169,7 +234,7 @@ public class PersistentCachedDatabase implements DatabaseInterface{
         for(int u = 0; u< CURR_DIMENSION; ++u){
             double[] point = new double[CURR_DIMENSION];
             for(int i = 0; i < CURR_DIMENSION; ++i){
-                point[i]= getDoubleFromByteArray(data, blockStart + i * Double.BYTES);
+                point[i] = getDoubleFromByteArray(data, blockStart + i * Double.BYTES);
             }
             coords[u] = new Coordinate(point);
         }
@@ -190,13 +255,13 @@ public class PersistentCachedDatabase implements DatabaseInterface{
     }
 
     // uses big endian, last byte represents MSB of data
-    private byte[] getByteArrFromInteger(int data){
+    private byte[] getByteArrayFromInteger(int data){
         byte[] arr = new byte[4];
         for( int i = 0; i < 4 ; i ++)
             arr[i] = getByteFromLong(data, i);
         return arr;
     }
-    private byte[] getByteArrFromDouble(double data){
+    private byte[] getByteArrayFromDouble(double data){
         long doubleBits = Double.doubleToLongBits(data);
         byte[] arr = new byte[8];
         for( int i = 0; i < 8 ; i ++)
