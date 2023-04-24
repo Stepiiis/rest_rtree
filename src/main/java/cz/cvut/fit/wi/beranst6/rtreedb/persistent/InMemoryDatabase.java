@@ -4,23 +4,26 @@ import cz.cvut.fit.wi.beranst6.rtreedb.modules.RTreeNode;
 import cz.cvut.fit.wi.beranst6.rtreedb.modules.RTreeRegion;
 
 import java.util.Map;
+import java.util.TreeMap;
 
 public class InMemoryDatabase implements DatabaseInterface {
-    private Map<Integer, RTreeNode> database;
+    private final Map<Integer, RTreeNode> database = new TreeMap<>();
 
     @Override
     public RTreeNode getNode(int id) {
-        throw new Error("not implemented");
+        return database.get(id);
     }
 
     @Override
-    public void editBoundingBox(int id, RTreeRegion mbr) {
-        throw new Error("not implemented");
+    public void editBoundingBox(int id) {
+        database.get(id).updateMBR();
     }
 
     @Override
-    public void deleteChildByIndex(int id, int index) {
-        throw new Error("not implemented");
+    public void deleteChildByIndex(int id, int childIndex){
+        RTreeNode child = database.get(id).getChildByIndex(childIndex);
+        database.get(id).deleteChildByIndex(childIndex);
+        database.remove(child.getId());
     }
 
     @Override

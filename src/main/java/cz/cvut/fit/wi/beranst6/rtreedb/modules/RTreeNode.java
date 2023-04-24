@@ -68,12 +68,16 @@ public class RTreeNode {
         this.isValid = false;
     }
 
-    public RTreeRegion getMBR() {
+    public RTreeRegion getMbr() {
         return minimumBoundingRegion;
     }
 
     public RTreeNode getChildByIndex(int index) {
         return children[index];
+    }
+    public void deleteChildByIndex(int index) {
+        this.children[index] = null;
+        updateMBR();
     }
 }
 

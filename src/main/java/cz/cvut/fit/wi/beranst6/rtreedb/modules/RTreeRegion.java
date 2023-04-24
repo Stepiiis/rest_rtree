@@ -10,7 +10,7 @@ public class RTreeRegion{
         return id;
     }
 
-    public Coordinate[] getBoundingBox() {
+    public Coordinate[] getBoundingRect() {
         return boundingBox;
     }
 

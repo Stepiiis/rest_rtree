@@ -30,7 +30,7 @@ public class Coordinate {
     public int getDimension(){
         return vectorCoordinates.length;
     }
-    public double[] getVectorCoordinates() {
+    public double[] getCoordinates() {
         return vectorCoordinates;
     }
 }

@@ -15,10 +15,11 @@ public class Constants {
     public static final Integer CHILD_NODE_HEADER_SIZE = 16;
     public static final Integer CHILD_NODE_HEADER_SIZE_POS = 5;
     public static final Integer CHILD_NODE_STATUS_POS = 0;
-    public static final Integer CHILD_NODE_STATUS_SIZE= 0;
-
+    public static final Integer CHILD_NODE_STATUS_BYTES = 1;
 
     // index header constants
+    public static final Integer INDEX_HEADER_NODE_COUNT_BYTES = 4;
+    public static final Integer INDEX_HEADER_NODE_COUNT_POS = 8;
     public static final Integer INDEX_HEADER_STATUS_BYTE_BYTES = 1;
     public static final Integer INDEX_HEADER_STATUS_POS = 12;
     public static final Integer INDEX_HEADER_SIZE_BYTES = 1;
@@ -28,11 +29,13 @@ public class Constants {
     public static final Integer INDEX_HEADER_DIMENSION_POS = 14;
     public static final Integer INDEX_HEADER_NODE_CAPACITY_SIZE_BYTES = 1;
     public static final Integer INDEX_HEADER_NODE_CAPACITY_POS = 15;
-    public static final Integer INDEX_HEADER_NODE_COUNT_BYTES = 4;
-    public static final Integer INDEX_HEADER_NODE_COUNT_POS = 16;
     public static final Integer INDEX_HEADER_ROOT_NODE_ID_BYTES = 4;
+    public static final Integer INDEX_HEADER_NODE_SIZE_POS = 16;
+    public static final Integer INDEX_HEADER_NODE_SIZE_BYTES = 4;
     public static final Integer INDEX_HEADER_ROOT_NODE_ID_POS = 20;
-    public static final Integer INDEX_HEADER_RESERVED_BYTES = 8; // empty 8 bytes for reserve
+    public static final Integer INDEX_HEADER_PARENT_NODE_ID_BYTES = 4;
+    public static final Integer INDEX_HEADER_PARENT_NODE_ID_POS = 24;
+    public static final Integer INDEX_HEADER_RESERVED_BYTES = 4; // 4 empty bytes for reserve
     public static final Integer COORDINATE_SIZE = CURR_DIMENSION * Double.BYTES;
     public static final Integer INDEX_FILE_TOTAL_HEADER_SIZE = INDEX_HEADER_SIZE + COORDINATE_SIZE * CURR_DIMENSION; // HEADER and bounding box of this node
     public static final Integer INDEX_FILE_NODE_COORDINATES_SIZE = CURR_DIMENSION * COORDINATE_SIZE;
