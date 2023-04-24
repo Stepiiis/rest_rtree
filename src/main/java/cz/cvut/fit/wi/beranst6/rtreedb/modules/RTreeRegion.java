@@ -6,6 +6,14 @@ public class RTreeRegion{
     private final int dim;
     Coordinate c1,c2, c3;
 
+    public RTreeRegion(int id, Coordinate c1){
+        this.dim =1;
+        this.id = id;
+        this.c1 = c1;
+        this.c2 = new Coordinate();
+        this.c3 = new Coordinate();
+    }
+
     public RTreeRegion(int id, Coordinate c1, Coordinate c2){
         this.c1 = c1;
         this.c2 = c2;
