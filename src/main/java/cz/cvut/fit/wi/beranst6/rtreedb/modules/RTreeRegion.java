@@ -1,33 +1,32 @@
 package cz.cvut.fit.wi.beranst6.rtreedb.modules;
 
+import cz.cvut.fit.wi.beranst6.rtreedb.modules.utils.Coordinate;
+
 public class RTreeRegion{
 
     private final int id;
-    private final int dim;
-    Coordinate c1,c2, c3;
 
-    public RTreeRegion(int id, Coordinate c1){
-        this.dim =1;
-        this.id = id;
-        this.c1 = c1;
-        this.c2 = new Coordinate();
-        this.c3 = new Coordinate();
+    public int getId() {
+        return id;
     }
 
-    public RTreeRegion(int id, Coordinate c1, Coordinate c2){
-        this.c1 = c1;
-        this.c2 = c2;
-        this.c3 = new Coordinate(); // all zeroes, only for 2D
-        this.dim = 2;
-        this.id = id;
-    }
-    public RTreeRegion(int id, Coordinate c1, Coordinate c2, Coordinate c3){
-        this.c1 = c1;
-        this.c2 = c2;
-        this.c3 = c3;
-        this.dim = 3;
-        this.id = id;
+    public Coordinate[] getBoundingBox() {
+        return boundingBox;
     }
 
+    Coordinate[] boundingBox;
+
+    public RTreeRegion(int id, Coordinate... box){
+        this.id = id;
+        boundingBox = box;
+    }
+
+    /**
+     *  returns true if object is inside region, specified by obj2
+     * */
+    public boolean isInside(RTreeRegion reg){
+        //todo
+        throw new Error("not implemented");
+    }
 
 }
