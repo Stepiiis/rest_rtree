@@ -12,7 +12,7 @@ class CachedDatbaseTest {
         int prevMaxDim = Constants.CURR_DIMENSION;
         Constants.CURR_DIMENSION = 3;
         PersistentCachedDatabase db = new PersistentCachedDatabase(10);
-        int index = db.put(5, new RTreeRegion(5,new Coordinate(1),new Coordinate(2),new Coordinate(3)));
+        int index = db.put(5, new RTreeRegion(new Coordinate(1),new Coordinate(2),new Coordinate(3)));
         db.getChildOfNodeByIndex(5, index);
         Constants.CURR_DIMENSION = prevMaxDim;
 

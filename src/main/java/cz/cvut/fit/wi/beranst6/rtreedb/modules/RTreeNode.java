@@ -35,12 +35,12 @@ public class RTreeNode {
         }
     }
 
-    public void addChild(RTreeNode child){
+    public void addChild(RTreeNode child, int childId){
         this.children[this.children.length-1] = child;
         this.children[this.children.length-1].setParent(this);
     }
-    public void addChild(RTreeRegion child){
-        this.children[this.children.length-1] = new RTreeNode(child.getId(), child);
+    public int addChild(RTreeRegion child, int childId){
+        this.children[this.children.length-1] = new RTreeNode(id, child);
         this.children[this.children.length-1].setParent(this);
     }
 

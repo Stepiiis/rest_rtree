@@ -35,6 +35,7 @@ public interface DatabaseInterface {
     /**
      * returns children of the object
      */
-    RTreeRegion[] getChildren(int idNode, int childIndex);
+    RTreeRegion[] getChild(int idNode, int childIndex);
+    RTreeNode[] getAllChildren(int idNode);
 
 }

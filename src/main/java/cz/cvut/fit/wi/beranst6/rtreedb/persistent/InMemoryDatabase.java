@@ -2,13 +2,22 @@ package cz.cvut.fit.wi.beranst6.rtreedb.persistent;
 
 import cz.cvut.fit.wi.beranst6.rtreedb.modules.RTreeNode;
 import cz.cvut.fit.wi.beranst6.rtreedb.modules.RTreeRegion;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+@Service
 public class InMemoryDatabase implements DatabaseInterface {
     private final Map<Integer, RTreeNode> database = new TreeMap<>();
+
+    private final SequenceGeneratorInterface sequenceService;
+    @Autowired
+    public InMemoryDatabase(InMemorySequenceGenerator sequenceService) {
+        this.sequenceService = sequenceService;
+    }
 
     @Override
     public RTreeNode getNode(int id) {
@@ -33,8 +42,13 @@ public class InMemoryDatabase implements DatabaseInterface {
     }
 
     @Override
-    public RTreeRegion[] getChildren(int id, int index) {
+    public RTreeRegion[] getChild(int id, int index) {
         return new RTreeRegion[0];
+    }
+
+    @Override
+    public RTreeNode[] getAllChildren(int idNode) {
+        return new RTreeNode[0];
     }
 
     @Override
@@ -45,8 +59,8 @@ public class InMemoryDatabase implements DatabaseInterface {
     @Override
     public int put(int id, RTreeRegion object) {
         if (database.containsKey(id)) {
-            database.get(id).addChild(object);
+            database.get(id).addChild(object, sequenceService.getAndIncrease());
         }
-        return object.getId();
+        return id;
     }
 }
