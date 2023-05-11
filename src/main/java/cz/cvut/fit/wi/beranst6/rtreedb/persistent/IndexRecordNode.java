@@ -7,7 +7,7 @@ public class IndexRecordNode {
     private byte statusByte;
     private int id;
     private byte headerSize;
-    private Coordinate[] mbr = new Coordinate[Constants.CURR_DIMENSION];
+    private Coordinate[] mbr;
 
     IndexRecordNode(byte statusByte, int id, byte headerSize, Coordinate... mbr) {
         this.statusByte = statusByte;

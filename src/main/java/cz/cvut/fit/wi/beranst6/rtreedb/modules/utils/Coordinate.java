@@ -7,6 +7,9 @@ public class Coordinate {
     public Coordinate(double... vectorCoordinates){
         this.vectorCoordinates = vectorCoordinates;
     }
+    public Coordinate(int length){
+        vectorCoordinates = new double[length];
+    }
 
     public Double getCoordinateByIndex(int index){
         return vectorCoordinates[index];
@@ -23,7 +26,7 @@ public class Coordinate {
         return new CoordIndexPair(i, highestCoordinate);
     }
 
-    public void setCoordinate(int index, double value){
+    public void setCoordinateByAxis(int index, double value){
         vectorCoordinates[index] = value;
     }
 
