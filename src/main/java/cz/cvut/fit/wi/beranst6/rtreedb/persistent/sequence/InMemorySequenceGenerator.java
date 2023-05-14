@@ -1,11 +1,11 @@
-package cz.cvut.fit.wi.beranst6.rtreedb.persistent;
+package cz.cvut.fit.wi.beranst6.rtreedb.persistent.sequence;
 
 import org.springframework.stereotype.Service;
 
 @Service
 public class InMemorySequenceGenerator implements SequenceGeneratorInterface {
 
-    int counter = 0;
+    int counter = 1;
     @Override
     public int getAndIncrease() {
         return counter++;

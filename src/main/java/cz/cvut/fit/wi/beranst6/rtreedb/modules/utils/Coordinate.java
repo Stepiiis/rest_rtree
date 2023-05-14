@@ -1,5 +1,7 @@
 package cz.cvut.fit.wi.beranst6.rtreedb.modules.utils;
 
+import java.util.Arrays;
+
 public class Coordinate {
 
     private double[] vectorCoordinates; // dimension is implicit by the size of the array
@@ -35,5 +37,21 @@ public class Coordinate {
     }
     public double[] getCoordinates() {
         return vectorCoordinates;
+    }
+
+	public Coordinate copy() {
+        return new Coordinate(vectorCoordinates.clone());
+	}
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (! (o instanceof Coordinate that)) return false;
+        return Arrays.equals(vectorCoordinates, that.vectorCoordinates);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(vectorCoordinates);
     }
 }

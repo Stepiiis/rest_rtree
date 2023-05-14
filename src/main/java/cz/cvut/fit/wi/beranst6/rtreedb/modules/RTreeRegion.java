@@ -6,6 +6,7 @@ import cz.cvut.fit.wi.beranst6.rtreedb.modules.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class RTreeRegion{
 
@@ -61,11 +62,23 @@ public class RTreeRegion{
         return new Pair<>(min, max);
     }
 
-    public List<BoundingBox> getProjection(){
-        List<BoundingBox> projectionRes = new ArrayList<>();
-        for(int i = 0 ; i < this.getBoundingRect().size(); i++){
-            projectionRes.add(this.getProjectionByAxis(i));
-        }
-        return projectionRes;
+    public List<Coordinate> getMBRasList(){
+        return List.of(boundingBox.getMin(), boundingBox.getMax());
+    }
+
+    public RTreeRegion copy() {
+        return new RTreeRegion(boundingBox.copy());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (! (o instanceof RTreeRegion that)) return false;
+        return getDimension() == that.getDimension() && boundingBox.equals(that.boundingBox);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(boundingBox, getDimension()); // this seems wrong
     }
 }

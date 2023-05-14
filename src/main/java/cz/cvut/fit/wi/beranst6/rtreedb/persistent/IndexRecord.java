@@ -15,10 +15,11 @@ public class IndexRecord {
     private byte capacity;
     private int nodeSize;
     private RTreeRegion mbr;
+    private int mbrSize;
     private IndexRecordNode[] children = new IndexRecordNode[Constants.NODE_CAPACITY];
 
     public IndexRecord(){}
-    public IndexRecord(int nodeCount, int id, int parentId, byte statusByte, byte headerSize, byte dimension, byte capacity, int nodeSize, RTreeRegion mbr, IndexRecordNode[] children) {
+    public IndexRecord(int nodeCount, int id, int parentId, byte statusByte, byte headerSize, byte dimension, byte capacity, int nodeSize, RTreeRegion mbr, int mbrSize, IndexRecordNode[] children) {
         this.nodeCount = nodeCount;
         this.id = id;
         this.parentId = parentId;
@@ -28,6 +29,7 @@ public class IndexRecord {
         this.capacity = capacity;
         this.nodeSize = nodeSize;
         this.mbr = mbr;
+        this.mbrSize = mbrSize;
         this.children = children;
     }
 
@@ -109,6 +111,13 @@ public class IndexRecord {
 
     public void setNodeSize(int nodeSize) {
         this.nodeSize = nodeSize;
+    }
+    public int getMbrSize() {
+        return mbrSize;
+    }
+
+    public void setMbrSize(int mbrSize) {
+        this.mbrSize = mbrSize;
     }
 }
 

@@ -1,6 +1,7 @@
-package cz.cvut.fit.wi.beranst6.rtreedb.persistent;
+package cz.cvut.fit.wi.beranst6.rtreedb.persistent.sequence;
 
 import cz.cvut.fit.wi.beranst6.rtreedb.exception.DatabaseException;
+import org.springframework.stereotype.Service;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -8,7 +9,7 @@ import java.nio.file.Paths;
 import java.util.logging.Logger;
 
 public class PersistentSequenceGenerator implements SequenceGeneratorInterface {
-    private int counter = 0;
+    private int counter = 1;
     private String indexFolder;
 
     Logger LOGG = Logger.getLogger(PersistentSequenceGenerator.class.getName());
