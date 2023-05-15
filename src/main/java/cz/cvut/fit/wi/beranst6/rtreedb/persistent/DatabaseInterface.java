@@ -60,6 +60,8 @@ public interface DatabaseInterface {
 
 	boolean isLeaf(int id);
 
+	boolean isIndex(int id);
+
 	int getNextId();
 
 	void invalidateCached(int id);

@@ -413,7 +413,17 @@ public class PersistentCachedDatabase implements DatabaseInterface {
 		return false;
 	}
 
-	@Override
+    @Override
+    public boolean isIndex(int id) {
+        try {
+			RTreeNode node = getNodeFromFile(id); // if node is not in db, it is a leaf record or an indexed record only stored in parent node
+		} catch (DatabaseException e) {
+			return false;
+		}
+		return true;
+    }
+
+    @Override
 	public int getNextId() {
 		return sequenceGen.getAndIncrease();
 	}

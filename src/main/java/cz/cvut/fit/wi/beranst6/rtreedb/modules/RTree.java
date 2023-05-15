@@ -85,8 +85,8 @@ public class RTree {
 	 * @return List of nodes inside region given as parameter
 	 */
 	public List<RTreeNode> search(RTreeRegion region) {
-		return searchImpl(root, region);
-	} // TODO: GET ROOT FROM DB AND WORK WITH THAT LMAO
+		return searchImpl(getRoot(), region);
+	}
 
 	private List<RTreeNode> searchImpl(RTreeNode node, RTreeRegion region) {
 		ArrayList<RTreeNode> result = new ArrayList<>();
@@ -200,6 +200,10 @@ public class RTree {
 			db.updateNodeHeader(DBSecondSeed);
 		}
 		while (children.size() > 0) {
+			if(isAnyOfGroupTooSmall(newNodes,children)) {
+				addAllToGroupNeeded(children, newNodes, isLeaf);
+				return newNodes;
+			}
 			node = linPickNext(children);
 			RTreeNode parent = pickParent(node, newNodes);
 			parent.addChild(node);
@@ -211,6 +215,21 @@ public class RTree {
 		return newNodes;
 	}
 
+	private void addAllToGroupNeeded(List<RTreeNode> children, Pair<RTreeNode, RTreeNode> newNodes, boolean isLeaf) {
+		RTreeNode smallestNode = newNodes.getFirst().getChildren().size() > newNodes.getSecond().getChildren().size() ? newNodes.getSecond() : newNodes.getFirst();
+		for(RTreeNode node : children){
+			smallestNode.addChild(node);
+			if(!isLeaf){
+				db.updateNodeHeader(node);
+			}
+		}
+	}
+
+	private boolean isAnyOfGroupTooSmall(Pair<RTreeNode, RTreeNode> newNodes, List<RTreeNode> children) {
+		return newNodes.getFirst().getChildren().size() + children.size() == config.getMinNodeEntries() ||
+				newNodes.getSecond().getChildren().size() + children.size() == config.getMinNodeEntries();
+	}
+
 	private RTreeNode pickParent(RTreeNode node, Pair<RTreeNode, RTreeNode> newNodes) {
 		Pair<Double, Double> areaPairFirst = newNodes.getFirst().getAreaDeltaContaining(node.getMbr());
 		Pair<Double, Double> areaPairSecond = newNodes.getSecond().getAreaDeltaContaining(node.getMbr());
@@ -220,8 +239,10 @@ public class RTree {
 			return newNodes.getSecond();
 		} else if (areaPairFirst.getSecond() < areaPairSecond.getSecond()) {
 			return newNodes.getFirst();
-		} else {
+		} else if (areaPairFirst.getSecond() > areaPairSecond.getSecond()) {
 			return newNodes.getSecond();
+		} else {
+			return newNodes.getSecond().getChildren().size() > newNodes.getFirst().getChildren().size() ? newNodes.getFirst() : newNodes.getSecond();
 		}
 	}
 

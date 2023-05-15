@@ -104,7 +104,12 @@ public class InMemoryDatabase implements DatabaseInterface {
 		return ! database.containsKey(id);
 	}
 
-	@Override
+    @Override
+    public boolean isIndex(int id) {
+        return database.containsKey(id);
+    }
+
+    @Override
 	public int getNextId() {
 		return sequenceService.getAndIncrease();
 	}
