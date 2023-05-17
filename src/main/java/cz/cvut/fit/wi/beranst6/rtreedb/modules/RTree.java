@@ -41,17 +41,17 @@ public class RTree {
 			point = new Coordinate(newCoords);
 		}
 		RTreeRegion region = new RTreeRegion(point,point);
-		List<RTreeNode> overlapping = getKOverlappingIndexes(region, k);
-		return overlapping.subList(0, Math.min(k, overlapping.size()));
+		List<RTreeNode> kNearest = getKNearestIndexes(region, k);
+		return kNearest.subList(0, Math.min(k, kNearest.size()));
 	}
 
 
 	// returns records of overlapping leaf nodes in order of distance from the point (ascending)
-	private List<RTreeNode> getKOverlappingIndexes(RTreeRegion region, int k) {
-		return getKOverlappingIndexesImpl(getRoot(), region, k).stream().sorted(Comparator.comparingDouble(val->calculateMinDist(region, val.getMbr()))).toList();
+	private List<RTreeNode> getKNearestIndexes(RTreeRegion region, int k) {
+		return getKNearestIndexesImpl(getRoot(), region, k).stream().sorted(Comparator.comparingDouble(val->calculateMinDist(region, val.getMbr()))).toList();
 	}
 
-	private List<RTreeNode> getKOverlappingIndexesImpl(RTreeNode node, RTreeRegion region, int k) {
+	private List<RTreeNode> getKNearestIndexesImpl(RTreeNode node, RTreeRegion region, int k) {
 		List<RTreeNode> overlappingChildren = getOverlappingIndexesImpl(node, region, k);
 		if(overlappingChildren.size() >= k)
 			return overlappingChildren;
@@ -61,9 +61,9 @@ public class RTree {
 			if(resultList.size() >= k)
 				return resultList;
 			if(db.isIndex(child.getId()))
-				resultList.addAll(getKOverlappingIndexesImpl(child, region,k));
+				resultList.addAll(getKNearestIndexesImpl(db.getNode(child.getId()), region,k));
 			else if(db.isLeaf(child.getId())){
-				resultList.addAll(child.getChildren());
+				resultList.add(child);
 			}
 		}
 		return resultList;
@@ -75,11 +75,11 @@ public class RTree {
 			if(resultList.size() >= k)
 				return resultList;
 			if(db.isIndex(child.getId())) {
-				resultList.addAll(getKOverlappingIndexesImpl(child, region,k));
+				resultList.addAll(getOverlappingIndexesImpl(db.getNode(child.getId()), region,k));
 			}
 			else if(db.isLeaf(child.getId())){
 				if(ObjectFittingUtil.SAT(region,child.getMbr()))
-					resultList.addAll(child.getChildren());
+					resultList.add(child);
 			}
 		}
 		return resultList;

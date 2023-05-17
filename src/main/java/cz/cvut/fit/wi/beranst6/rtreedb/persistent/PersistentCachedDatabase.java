@@ -44,7 +44,7 @@ public class PersistentCachedDatabase implements DatabaseInterface {
 		if (node.getId() == id)
 			node = node.getChildById(index);
 		else node = null;
-		return (node == null ? getNodeFromFile(id).getChildById(index) : node);
+		return (node == null ? getNodeFromFile(id, true).getChildById(index) : node);
 	}
 
 	@Override
@@ -62,9 +62,9 @@ public class PersistentCachedDatabase implements DatabaseInterface {
 		return this.indexFolderPath + "/index_" + config.getDimension() + "d_" + id + ".bin";
 	}
 
-	public RTreeNode getNodeFromFile(int id) {
+	public RTreeNode getNodeFromFile(int id, boolean shouldLog) {
 		String fileName = getNodeFilePath(id);
-		return FileHandlingUtil.handleFileOperation(fileName, "r", this.LOGG, rFile -> {
+		return FileHandlingUtil.handleFileOperation(fileName, "r", shouldLog?this.LOGG:null, rFile -> {
 			ArrayList<RTreeNode> children = new ArrayList<>();
 			RTreeNode foundNode = new RTreeNode(id);
 			IndexRecord record = new IndexRecord();
@@ -196,7 +196,7 @@ public class PersistentCachedDatabase implements DatabaseInterface {
 			return null;
 		RTreeNode node = getNodeFromCache(id);
 		if (node == null || node.getId() != id)
-			return getNodeFromFile(id);
+			return getNodeFromFile(id, true);
 		return node;
 	}
 
@@ -273,7 +273,7 @@ public class PersistentCachedDatabase implements DatabaseInterface {
 		IndexRecord record = loadIndexRecord(fileName);
 		RTreeNode node;
 		try {
-			node = getNodeFromFile(idNode);
+			node = getNodeFromFile(idNode, true);
 		} catch (DatabaseException e) {
 			return false;
 		}
@@ -428,7 +428,7 @@ public class PersistentCachedDatabase implements DatabaseInterface {
 	public boolean isLeaf(int id) {
 		// todo improve so that we dont need to read the node from db and rely on exceptions
 		try {
-			RTreeNode node = getNodeFromFile(id); // if node is not in db, it is a leaf record of a leaf node only stored in parent node
+			RTreeNode node = getNodeFromFile(id, false); // if node is not in db, it is a leaf record of a leaf node only stored in parent node
 			if(node.getChildren().size() > 0)
 				tryReadingNode(node.getChildByIndex(0).getId()); // if child is not in db, it is a leaf node
 			else return false;
@@ -446,7 +446,7 @@ public class PersistentCachedDatabase implements DatabaseInterface {
     @Override
     public boolean isIndex(int id) {
         try {
-			getNodeFromFile(id); // if node is not in db, it is a leaf record or an indexed record only stored in parent node
+			tryReadingNode(id); // if node is not in db, it is a leaf record or an indexed record only stored in parent node
 		} catch (DatabaseException e) {
 			return false;
 		}
