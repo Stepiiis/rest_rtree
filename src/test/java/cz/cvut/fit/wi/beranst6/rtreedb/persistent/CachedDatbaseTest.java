@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 class CachedDatabaseTest {
 
     @Test
-    void testPutAndGet() throws IOException {
+    void testPutAndGet() {
         TreeConfig config = new TreeConfig((byte)2,(byte)2);
         PersistentCachedDatabase db = new PersistentCachedDatabase(10, config, new InMemorySequenceGenerator(), "testDb");
         RTreeNode node = new RTreeNode(5,new RTreeRegion(new Coordinate(1d,1d),new Coordinate(3f,3f)));
@@ -25,11 +25,10 @@ class CachedDatabaseTest {
         db.putChild(5, child);
         assertFalse(db.putChild(5, child));
         db.putChild(5, child2);
-        child.equals(db.getChild(5,0));
         assertEquals(child, db.getChild(5,0));
         assertEquals(child2, db.getChild(5,1));
 //        assertEquals(child, db.getChild(5,1));
-        db.clearDatabase();
+        db.clearDatabase(false);
     }
 
     @Test

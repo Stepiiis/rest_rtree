@@ -26,6 +26,7 @@ public class Pair <F, S> {
 
     @Override
     public boolean equals(Object o) {
+        if(o == null) return false;
         if (this == o) return true;
         if (! (o instanceof Pair<?, ?> pair)) return false;
         return Objects.equals(getFirst(), pair.getFirst()) && Objects.equals(getSecond(), pair.getSecond());

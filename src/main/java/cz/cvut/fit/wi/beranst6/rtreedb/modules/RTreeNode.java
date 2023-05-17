@@ -13,7 +13,6 @@ public class RTreeNode {
     private RTreeRegion minimumBoundingRegion;
     private double area = 0d;
     private List<RTreeNode> children = new ArrayList<>(Constants.NODE_CAPACITY);
-    private RTreeNode parent = null;
     private int parentId = 0;
     private int id;
     private int depth = 0; // root is 0;
@@ -63,7 +62,7 @@ public class RTreeNode {
 
     // returns index of the child
     public int addChild(RTreeNode child) {
-        child.setParent(this);
+        child.setParentId(this.getId());
         this.children.add(child);
         updateMBR();
         return this.children.size() - 1;
@@ -72,7 +71,7 @@ public class RTreeNode {
     // returns index of the child
     public int addChild(int childId, RTreeRegion child) {
         RTreeNode node = new RTreeNode(childId, child);
-        node.setParent(this);
+        node.setParentId(this.getId());
         this.children.add(node);
         updateMBR();
         return this.children.size() - 1;
@@ -80,19 +79,15 @@ public class RTreeNode {
     public void setParentId(int parentId) {
         this.parentId = parentId;
     }
-    public void setParent(RTreeNode parent) {
-        this.parent = parent;
-        this.parentId = (parent != null? parent.getId():0) ;
-    }
 
-    public RTreeNode getParent() {
-        return this.parent;
-    }
 
     public RTreeNode(int id, RTreeRegion mbr) {
         this.id = id;
         this.minimumBoundingRegion = mbr;
-        this.calculateArea();
+        if(mbr != null)
+            this.area = 0;
+        else
+            this.calculateArea();
     }
 
     public void updateChildMbrInParent(RTreeNode child){
@@ -116,8 +111,6 @@ public class RTreeNode {
             return;
         }
 
-        Coordinate min = new Coordinate();
-        Coordinate max = new Coordinate();
         BoundingBox boundingBox = children.get(0).getMbr().getBoundingRect().copy();
         for(var child: children){
             BoundingBox childBB = child.getMbr().getBoundingRect();
@@ -202,13 +195,19 @@ public class RTreeNode {
     }
 
     public double calculateArea() {
-        BoundingBox mbr = this.getMbr().getBoundingRect();
-        area = 1;
-        int dimension = mbr.getMin().getDimension();
+        if(this.getMbr() == null)
+            this.area = 0;
+        else
+            this.area = calculateAreaImpl(this.getMbr().getBoundingRect());
+        return this.area;
+    }
+
+    public static double calculateAreaImpl(BoundingBox box){
+        double area = 1;
+        int dimension = box.getMin().getDimension();
         for (int i = 0 ; i < dimension ; ++i) {
-            area *= mbr.getMax().getCoordinateByIndex(i) - mbr.getMin().getCoordinateByIndex(i);
+            area *= box.getMax().getCoordinateByIndex(i) - box.getMin().getCoordinateByIndex(i);
         }
-        this.area=area;
         return area;
     }
 
@@ -218,14 +217,44 @@ public class RTreeNode {
 
     @Override
     public boolean equals(Object o) {
+        if(o == null) return false;
         if (this == o) return true;
         if (! (o instanceof RTreeNode rTreeNode)) return false;
-        return Double.compare(rTreeNode.getArea(), getArea()) == 0 && getId() == rTreeNode.getId() && minimumBoundingRegion.equals(rTreeNode.minimumBoundingRegion) && Objects.equals(getChildren(), rTreeNode.getChildren()) && Objects.equals(getParentId(), rTreeNode.getParentId());
+        return Double.compare(rTreeNode.getArea(), getArea()) == 0 && getId() == rTreeNode.getId() && RTreeRegion.areEqual(minimumBoundingRegion, rTreeNode.minimumBoundingRegion)
+                && Objects.equals(getChildren(), rTreeNode.getChildren()) && Objects.equals(getParentId(), rTreeNode.getParentId());
     }
+
 
     @Override
     public int hashCode() {
         return Objects.hash(getId());
+    }
+
+    @Override
+    public String toString() {
+        return "RTreeNode{" +
+                "mbr=" + (minimumBoundingRegion == null? null : minimumBoundingRegion.getBoundingRect()) +
+                ", parentId=" + parentId +
+                ", id=" + id +
+                '}';
+    }
+
+    public void removeChild(RTreeNode child) {
+        for(int i = 0 ; i < this.children.size(); ++i){
+            if(this.children.get(i).getId() == child.getId()){
+                this.children.remove(i);
+                updateMBR();
+                return;
+            }
+        }
+        updateMBR();
+    }
+
+    public byte getStatusByte() {
+        if(getMbr() == null)
+            return 1; // 0b00000001
+        else
+            return 3; // 0b00000011
     }
 }
 

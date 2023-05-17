@@ -72,13 +72,31 @@ public class RTreeRegion{
 
     @Override
     public boolean equals(Object o) {
+        if(o == null) return false;
         if (this == o) return true;
         if (! (o instanceof RTreeRegion that)) return false;
         return getDimension() == that.getDimension() && boundingBox.equals(that.boundingBox);
     }
 
+    public static boolean areEqual(RTreeRegion reg1, RTreeRegion reg2){
+       if( reg1 == null && reg2 != null) return false;
+       if( reg2 == null && reg1 != null) return false;
+       if( reg1 == null && reg2 == null) return true;
+       return reg1.equals(reg2);
+    }
+
+
     @Override
     public int hashCode() {
         return Objects.hash(boundingBox, getDimension()); // this seems wrong
     }
+
+    @Override
+    public String toString() {
+        return "RTreeRegion{" +
+                boundingBox +
+                '}';
+    }
+
+
 }

@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 public class Coordinate {
 
-    private double[] vectorCoordinates; // dimension is implicit by the size of the array
+    private final double[] vectorCoordinates; // dimension is implicit by the size of the array
 
     public Coordinate(double... vectorCoordinates){
         this.vectorCoordinates = vectorCoordinates;
@@ -13,12 +13,17 @@ public class Coordinate {
         vectorCoordinates = new double[length];
     }
 
+    @Override
+    public String toString() {
+        return Arrays.toString(vectorCoordinates);
+    }
+
     public Double getCoordinateByIndex(int index){
         return vectorCoordinates[index];
     }
 
     public CoordIndexPair getHighestCoordinate() {
-        Double highestCoordinate = vectorCoordinates[0];
+        double highestCoordinate = vectorCoordinates[0];
         int i = 1;
         for (; i < vectorCoordinates.length; i++) {
             if (vectorCoordinates[i] > highestCoordinate) {
@@ -45,6 +50,7 @@ public class Coordinate {
 
     @Override
     public boolean equals(Object o) {
+        if(o == null) return false;
         if (this == o) return true;
         if (! (o instanceof Coordinate that)) return false;
         return Arrays.equals(vectorCoordinates, that.vectorCoordinates);

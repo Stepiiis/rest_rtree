@@ -39,9 +39,21 @@ public class FileHandlingUtil {
 		record.setParentId(file.readInt());
 		file.seek(INDEX_HEADER_MBR_SIZE_POS);
 		record.setMbrSize(file.readInt());
-		RTreeRegion mbr = loadMBR(record.getHeaderSize(), file, config);
+		RTreeRegion mbr;
+		if(!isMBRValid(record.getStatusByte()))
+			mbr = null;
+		else
+			mbr = loadMBR(record.getHeaderSize(), file, config);
 		record.setMbr(mbr);
 		return true;
+	}
+
+	private static boolean isMBRValid(byte statusByte) {
+		return (statusByte & 0b00000010) != 0;
+	}
+
+	public static byte invalidateMBR(byte statusByte) {
+		return (byte) (statusByte & 0b11111101);
 	}
 
 	public static void writeChildNodeToFile(long offset, RTreeNode child, RandomAccessFile file, TreeConfig config) throws IOException {
@@ -64,10 +76,11 @@ public class FileHandlingUtil {
 
 	public static void updateIndexHeader(RTreeNode node, RandomAccessFile file, TreeConfig config) throws IOException {
 		file.seek(INDEX_HEADER_STATUS_POS);
-		file.writeByte(1);
+		file.writeByte(node.getStatusByte());
 		file.seek(INDEX_HEADER_PARENT_ID_POS);
 		file.writeInt(node.getParentId());
-		putMBR(INDEX_HEADER_SIZE, node.getMbr(), file, config);
+		if(isMBRValid(node.getStatusByte()))
+			putMBR(INDEX_HEADER_SIZE, node.getMbr(), file, config);
 	}
 
 	public static void writeStaticHeader(RandomAccessFile file, int nodeId, TreeConfig config) throws IOException {
@@ -108,7 +121,6 @@ public class FileHandlingUtil {
 
 	public static Coordinate getCoordinateFromFile(int blockStart, RandomAccessFile file, TreeConfig config) throws IOException {
 		Coordinate coord = new Coordinate(config.getDimension());
-		byte[] arr = new byte[(int)file.length()];
 		file.seek(blockStart);
 		for (int i = 0; i < config.getDimension(); ++ i) {
 			coord.getCoordinates()[i] = file.readDouble();
@@ -178,53 +190,61 @@ public class FileHandlingUtil {
 		try (RandomAccessFile raf = new RandomAccessFile(fileName, mode)) {
 			return foo.apply(raf);
 		} catch (FileNotFoundException e) {
-			LOGG.severe("File could not be opened/found: " + fileName);
+			if (LOGG != null)
+				LOGG.severe("File could not be opened/found: " + fileName);
 			throw new DatabaseException("File could not be opened/found: " + fileName);
 		} catch (IOException e) {
-			LOGG.severe("Error reading from file during creation rutine: " + fileName);
+			if (LOGG != null)
+				LOGG.severe("Error reading from file during creation rutine: " + fileName);
 			throw new DatabaseException("Error reading from file during creation rutine: " + fileName);
 		}
 	}
 
+	public static <T> T handleFileOperation(String fileName, String mode, FileFunction<RandomAccessFile, T> foo) {
+		return handleFileOperation(fileName, mode, null, foo);
+	}
+
 	/**
 	 * recursively deletes all files and folders in a directory - rm -rf style. use with caution
+	 *
 	 * @param indexFolder
 	 */
-	public static void deleteDirectory(String indexFolder) {
+	public static void deleteDirectory(String indexFolder, boolean leaveRoot) {
 		File file = new File(indexFolder);
 		if (file.isDirectory()) {
 			for (File f : Objects.requireNonNull(file.listFiles())) {
-				if(f.isDirectory())
-					deleteDirectory(f.getAbsolutePath());
+				if (f.isDirectory())
+					deleteDirectory(f.getAbsolutePath(), false);
 				if (! f.delete())
 					throw new DatabaseException("Could not delete file: " + f.getAbsolutePath());
 			}
 		}
-		if (file.exists())
-			if (! file.delete())
-				throw new DatabaseException("Could not delete file: " + file.getAbsolutePath());
+		if (! leaveRoot)
+			if (file.exists())
+				if (! file.delete())
+					throw new DatabaseException("Could not delete file: " + file.getAbsolutePath());
 	}
 
-	public static List<RTreeRegion> loadObjectsIntoArray(String filePath, int dimension){
+	public static List<RTreeRegion> loadObjectsIntoArray(String filePath, int dimension) {
 		List<RTreeRegion> objects = new ArrayList<>();
-		try(BufferedReader bis = new BufferedReader(new FileReader(filePath))){
+		try (BufferedReader bis = new BufferedReader(new FileReader(filePath))) {
 			String dim = bis.readLine().substring(2);
 			int dimInt = Integer.parseInt(dim);
-			if(dimInt != dimension)
+			if (dimInt != dimension)
 				throw new DatabaseException("Dimension of data does not match dimension of tree");
 			int count = Integer.parseInt(bis.readLine().substring(2));
-			for(int u = 0; u < count ; u++){
+			for (int u = 0; u < count; u++) {
 				Coordinate min = new Coordinate(dimension);
 				Coordinate max = new Coordinate(dimension);
 				String coordPair = bis.readLine();
 				String[] coords = coordPair.split("], ");
 				String[] cleanedCoords = new String[coords.length];
-				for(int i = 0 ; i < coords.length ; ++i){
+				for (int i = 0; i < coords.length; ++ i) {
 					cleanedCoords[i] = cleanWhitespace(cleanBraces(coords[i]));
 				}
 				String[] minCoords = cleanedCoords[0].split(",");
 				String[] maxCoords = cleanedCoords[1].split(",");
-				for(int i = 0; i < dimension; i++){
+				for (int i = 0; i < dimension; i++) {
 					min.getCoordinates()[i] = Double.parseDouble(minCoords[i]);
 					max.getCoordinates()[i] = Double.parseDouble(maxCoords[i]);
 				}
@@ -238,10 +258,11 @@ public class FileHandlingUtil {
 		return objects;
 	}
 
-	public  static String cleanBraces(String s){
-		return s.replaceAll("\\[", "").replaceAll("\\]", "");
+	public static String cleanBraces(String s) {
+		return s.replaceAll("\\[", "").replaceAll("]", "");
 	}
-	public static String cleanWhitespace(String s){
+
+	public static String cleanWhitespace(String s) {
 		return s.replaceAll("\\s+", "");
 	}
 }

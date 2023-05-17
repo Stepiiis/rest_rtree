@@ -14,7 +14,7 @@ public interface DatabaseInterface {
 	// assumes that parent already holds the updated MBR and does not need to be updated.
 	// returns the offset of the child node in the parent node
 	// -1 if child not found in parent
-	public boolean updateChildInParent(RTreeNode parent, RTreeNode child);
+	boolean updateChildInParent(RTreeNode parent, RTreeNode child);
 	/**
 	 * returns object from database
 	 */
@@ -40,7 +40,7 @@ public interface DatabaseInterface {
 	 *
 	 * @return
 	 */
-	boolean deleteChildById(int id, int childId);
+	boolean deleteChildById(RTreeNode id, int childId);
 
 	/**
 	 * removes object from database
@@ -72,5 +72,11 @@ public interface DatabaseInterface {
 
 	RTreeNode getRoot();
 
-	void clearDatabase();
+	void clearDatabase(boolean leaveFolder);
+
+	/**
+	 * saves the root node of the tree. sets root parentId to 0 and updates its node header
+	 * @param root
+	 */
+	void saveAsRoot(RTreeNode root);
 }

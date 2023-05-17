@@ -1,7 +1,5 @@
 package cz.cvut.fit.wi.beranst6.rtreedb.modules.utils;
 
-import java.util.Objects;
-
 public class BoundingBox extends Pair<Coordinate, Coordinate>{
     public BoundingBox(Coordinate min, Coordinate max) {
         super(min, max);
@@ -36,5 +34,13 @@ public class BoundingBox extends Pair<Coordinate, Coordinate>{
         if (this == o) return true;
         if (! (o instanceof BoundingBox pair)) return false;
         return getFirst().equals(pair.getFirst()) && getSecond().equals(pair.getSecond());
+    }
+
+    @Override
+    public String toString() {
+        return "BoundingBox{" +
+                "min=" + first +
+                ", max=" + second +
+                '}';
     }
 }

@@ -45,8 +45,10 @@ public class InMemoryDatabase implements DatabaseInterface {
 	}
 
 	@Override
-	public boolean deleteChildById(int parentId, int childId) {
-		RTreeNode node = database.get(parentId);
+	public boolean deleteChildById(RTreeNode parent, int childId) {
+		if(parent == null)
+			return false;
+		RTreeNode node = database.get(parent.getId());
 		if (node != null)
 			return node.deleteChildById(childId);
 		return false;
@@ -125,7 +127,7 @@ public class InMemoryDatabase implements DatabaseInterface {
 			return;
 		RTreeNode record = database.get(node.getId());
 		record.setMbr(node.getMbr().copy());
-		record.setParent(node.getParent());
+		record.setParentId(node.getParentId());
 	}
 
 	@Override
@@ -136,11 +138,18 @@ public class InMemoryDatabase implements DatabaseInterface {
 
 	@Override
 	public RTreeNode getRoot() {
-		return null;
+		return getNode(rootId);
 	}
 
 	@Override
-	public void clearDatabase() {
+	public void clearDatabase(boolean leaveFolder) {
 		database.clear();
+	}
+
+	@Override
+	public void saveAsRoot(RTreeNode root) {
+		root.setParentId(0);
+		database.put(root.getId(),root);
+		rootId = root.getId();
 	}
 }
