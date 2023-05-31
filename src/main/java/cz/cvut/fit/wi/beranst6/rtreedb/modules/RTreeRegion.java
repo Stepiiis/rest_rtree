@@ -2,13 +2,14 @@ package cz.cvut.fit.wi.beranst6.rtreedb.modules;
 
 import cz.cvut.fit.wi.beranst6.rtreedb.modules.utils.Coordinate;
 import cz.cvut.fit.wi.beranst6.rtreedb.modules.utils.BoundingBox;
+import cz.cvut.fit.wi.beranst6.rtreedb.modules.utils.ObjectFittingUtil;
 import cz.cvut.fit.wi.beranst6.rtreedb.modules.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class RTreeRegion{
+public class RTreeRegion implements Comparable<RTreeRegion> {
 
     public BoundingBox getBoundingRect() {
         return boundingBox;
@@ -25,7 +26,7 @@ public class RTreeRegion{
 
     public RTreeRegion(Coordinate... box){
         boundingBox=calculateMBR(box);
-        dimension = box.length;
+        dimension = box[0].getDimension();
     }
 
     public RTreeRegion(BoundingBox mbr){
@@ -34,9 +35,9 @@ public class RTreeRegion{
     }
 
     public BoundingBox calculateMBR(Coordinate[] box){
-        Coordinate min = new Coordinate(box.length);
-        Coordinate max = new Coordinate(box.length);
-        for(int i = 0 ; i < box.length; i++){
+        Coordinate min = new Coordinate(box[0].getDimension());
+        Coordinate max = new Coordinate(box[0].getDimension());
+        for(int i = 0 ; i < box[0].getDimension(); i++){
             Pair<Double,Double> temp = calculateProjectionByAxis(i, box);
             min.setCoordinateByAxis(i, temp.getFirst());
             max.setCoordinateByAxis(i, temp.getSecond());
@@ -99,4 +100,14 @@ public class RTreeRegion{
     }
 
 
+
+
+    @Override
+    public int compareTo(RTreeRegion o) {
+        return this.boundingBox.compareTo(o.boundingBox);
+    }
+
+    public boolean canFit(RTreeRegion boundingRect) {
+        return ObjectFittingUtil.SAT(boundingRect, this);
+    }
 }

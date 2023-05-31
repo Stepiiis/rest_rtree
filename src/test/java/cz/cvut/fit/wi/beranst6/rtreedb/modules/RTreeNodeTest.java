@@ -15,13 +15,11 @@ class RTreeNodeTest {
 	void testGetAreaDeltaContaining() {
 		RTreeNode testFitNode = new RTreeNode(-1, new RTreeRegion(new Coordinate(5d,5d), new Coordinate(8d,8d)));
 
-		List<RTreeNode> nodes = new ArrayList<>();
-		nodes.addAll(
-				List.of(
-				new RTreeNode(-1, new RTreeRegion(new Coordinate(0d,0d), new Coordinate(10d,10d))),
-				new RTreeNode(-1, new RTreeRegion(new Coordinate(0d,0d), new Coordinate(3d,3d))),
-				new RTreeNode(-1, new RTreeRegion(new Coordinate(10d,10d), new Coordinate(15d,15d)))
-				));
+		List<RTreeNode> nodes = new ArrayList<>(List.of(
+				new RTreeNode(-1, new RTreeRegion(new Coordinate(0d, 0d), new Coordinate(10d, 10d))),
+				new RTreeNode(-1, new RTreeRegion(new Coordinate(0d, 0d), new Coordinate(3d, 3d))),
+				new RTreeNode(-1, new RTreeRegion(new Coordinate(10d, 10d), new Coordinate(15d, 15d)))
+		));
 		for(RTreeNode node : nodes){
 			node.addChild(node);
 		}
@@ -37,5 +35,7 @@ class RTreeNodeTest {
 
 		assertEquals(nodes.get(0),RTree.getBestEnlargedChildContaining(nodes, testFitNode.getMbr()));
 
+
 	}
+
 }

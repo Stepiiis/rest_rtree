@@ -1,5 +1,7 @@
 package cz.cvut.fit.wi.beranst6.rtreedb.modules.utils;
 
+import java.util.Comparator;
+
 public class BoundingBox extends Pair<Coordinate, Coordinate>{
     public BoundingBox(Coordinate min, Coordinate max) {
         super(min, max);
@@ -42,5 +44,13 @@ public class BoundingBox extends Pair<Coordinate, Coordinate>{
                 "min=" + first +
                 ", max=" + second +
                 '}';
+    }
+
+    public int compareTo(BoundingBox boundingBox) {
+        int res = this.getMinByAxis(0) < boundingBox.getMinByAxis(0) ? -1 : 1;
+        if (this.getMinByAxis(0) == boundingBox.getMinByAxis(0)) {
+            res = 0;
+        }
+        return res;
     }
 }

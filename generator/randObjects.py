@@ -22,9 +22,11 @@ if __name__ == "__main__":
             count = int(arg.split("=")[1])
         if "-r=" in arg:
             num_range = [int(x) for x in arg.split("=")[1].split(",")]
+        if "-h" in arg:
+            print("-d=num dimension, -c=num count, -r=num,num range")
     random.seed(datetime.now().timestamp())
-    print("//",dimension)
-    print("//",count)
+    print("//" + str(dimension))
+    print("//" + str(count))
     for _ in range(count):
         mbr = [
             genArr(num_range,dimension),
