@@ -51,4 +51,9 @@ public class DBTreeController {
 	public ResponseEntity<List<ResultRegionDTO>> knn(@PathVariable int id, @RequestBody kNNDTO dto){
 		return persistentRTreeService.knn(id, dto);
 	}
+
+	@DeleteMapping("/{id}/clear")
+	public ResponseEntity<String> cleardb(@PathVariable int id){
+		return persistentRTreeService.clear(id);
+	}
 }

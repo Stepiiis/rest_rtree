@@ -20,4 +20,9 @@ public class InMemorySequenceGenerator implements SequenceGeneratorInterface {
     public void setCurrentValue(int value) {
         counter = value;
     }
+
+	@Override
+	public void reset() {
+        counter =1;
+	}
 }

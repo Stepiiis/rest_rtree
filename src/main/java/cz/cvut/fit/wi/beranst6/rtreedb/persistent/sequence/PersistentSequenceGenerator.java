@@ -12,6 +12,7 @@ import java.util.logging.Logger;
 
 public class PersistentSequenceGenerator implements SequenceGeneratorInterface {
 	private int counter;
+	private int startValue;
 	private String indexFolder;
 
 	Logger LOGG = Logger.getLogger(PersistentSequenceGenerator.class.getName());
@@ -30,8 +31,10 @@ public class PersistentSequenceGenerator implements SequenceGeneratorInterface {
 			throw new DatabaseException("Sequence start value has to be greater than 0");
 		if(Files.notExists(Paths.get(this.indexFolder + "/sequence.bin"))) {
 			counter = startValue;
+			this.startValue = startValue;
 			writeCounterToFile();
 		}else{
+			this.startValue = 1;
 			loadCounterFromFile();
 		}
 	}
@@ -73,6 +76,12 @@ public class PersistentSequenceGenerator implements SequenceGeneratorInterface {
 	public void setCurrentValue(int value) {
 		counter = value;
         writeCounterToFile();
+	}
+
+	@Override
+	public void reset() {
+		this.counter = startValue;
+		writeCounterToFile();
 	}
 
 

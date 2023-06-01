@@ -621,4 +621,8 @@ public class RTree {
 		if (node == null) return false;
 		return node.getParentId() == 0 || node.equals(getRoot());
 	}
+
+	public void clearDB() {
+		db.clearDatabase(true,false);
+	}
 }

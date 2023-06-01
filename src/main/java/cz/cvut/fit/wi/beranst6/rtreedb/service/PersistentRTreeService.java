@@ -86,4 +86,12 @@ public class PersistentRTreeService {
 	private List<ResultRegionDTO> mapRTreeNodeToResultDTO(List<RTreeNode> res){
 		return res.stream().map(node-> new ResultRegionDTO(new RegionDTO(Arrays.asList(node.getMbr().getBoundingRect().getMin().getCoordinates()),List.of(node.getMbr().getBoundingRect().getMax().getCoordinates())),node.getId())).toList();
 	}
+
+	public ResponseEntity<String> clear(int id) {
+		if(treeMap.containsKey(id)){
+			treeMap.get(id).clearDB();
+			return ResponseEntity.ok("OK");
+		}
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+	}
 }

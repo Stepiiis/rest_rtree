@@ -142,7 +142,7 @@ public class InMemoryDatabase implements DatabaseInterface {
 	}
 
 	@Override
-	public void clearDatabase(boolean leaveFolder, boolean cleanSequence) {
+	public void clearDatabase(boolean leaveFolder, boolean leaveSequence) {
 		database.clear();
 	}
 

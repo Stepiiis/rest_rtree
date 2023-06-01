@@ -147,6 +147,9 @@ public class PersistentCachedDatabase implements DatabaseInterface {
 	public void clearDatabase(boolean leaveFolder, boolean leaveSequence) {
 		FileHandlingUtil.deleteDirectory(indexFolderPath,leaveFolder, leaveSequence);
 		nullifyCache();
+		if(!leaveSequence){
+			sequenceGen.reset();
+		}
 		rootId = null;
 	}
 

@@ -72,7 +72,7 @@ public interface DatabaseInterface {
 
 	RTreeNode getRoot();
 
-	void clearDatabase(boolean leaveFolder, boolean cleanSequence);
+	void clearDatabase(boolean leaveFolder, boolean leaveSequence);
 
 	/**
 	 * saves the root node of the tree. sets root parentId to 0 and updates its node header
