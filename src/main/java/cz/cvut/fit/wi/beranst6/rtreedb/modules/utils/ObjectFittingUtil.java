@@ -13,7 +13,22 @@ public class ObjectFittingUtil {
         return true;
     }
 
-    private static boolean checkProjectionContainment(Pair<Double,Double> object, Pair<Double,Double> target) {
-        return (target.getFirst() <= object.getFirst() && target.getSecond() >= object.getSecond());
+    private static boolean checkProjectionContainment(Pair<Double,Double> objectToFit, Pair<Double,Double> target) {
+        return (target.getFirst() <= objectToFit.getFirst() && target.getSecond() >= objectToFit.getSecond());
+    }
+
+    public static boolean intersects(RTreeRegion object1, RTreeRegion object2) {
+        int dimension = Math.min(object1.getDimension(),object2.getDimension());
+        for(int axis = 0; axis < dimension; ++axis){
+            if(checkProjectionIntersection(object1.getProjectionByAxis(axis),object2.getProjectionByAxis(axis))){
+                return true;
+            }
+
+        }
+        return false;
+    }
+
+    private static boolean checkProjectionIntersection(Pair<Double, Double> object1, Pair<Double, Double> object2) {
+        return object1.getFirst() < object2.getSecond() && object2.getFirst() < object1.getSecond();
     }
 }

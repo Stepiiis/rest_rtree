@@ -1,16 +1,21 @@
 package cz.cvut.fit.wi.beranst6.rtreedb.modules.utils;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class Coordinate {
 
-    private final double[] vectorCoordinates; // dimension is implicit by the size of the array
+    private final Double[] vectorCoordinates; // dimension is implicit by the size of the array
 
-    public Coordinate(double... vectorCoordinates){
+    public Coordinate(Double... vectorCoordinates){
         this.vectorCoordinates = vectorCoordinates;
     }
     public Coordinate(int length){
-        vectorCoordinates = new double[length];
+        vectorCoordinates = new Double[length];
+    }
+
+    public Coordinate(List<Double> coordinates) {
+        this.vectorCoordinates = coordinates.toArray(Double[]::new);
     }
 
     @Override
@@ -40,7 +45,7 @@ public class Coordinate {
     public int getDimension(){
         return vectorCoordinates.length;
     }
-    public double[] getCoordinates() {
+    public Double[] getCoordinates() {
         return vectorCoordinates;
     }
 

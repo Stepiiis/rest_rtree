@@ -11,17 +11,17 @@ class ObjectFittingUtilTest {
     @Test
     void testSAT() {
         RTreeRegion[][] objectTargetTestVals = new RTreeRegion[][]{
-                {new RTreeRegion(new Coordinate(0,1), new Coordinate(1,0)), new RTreeRegion(new Coordinate(0,1), new Coordinate(1,0))},
-                {new RTreeRegion(new Coordinate(0,1,0), new Coordinate(1,0,0), new Coordinate(0,0,1)),new RTreeRegion(new Coordinate(0,1,0), new Coordinate(1,0,0), new Coordinate(0,0,1))},
-                {new RTreeRegion(new Coordinate(0,1,0), new Coordinate(1,0,0), new Coordinate(0,0,1)),new RTreeRegion(new Coordinate(0,1,0), new Coordinate(3,5,7), new Coordinate(3,3,3))},
-                {new RTreeRegion(new Coordinate(0,1,0), new Coordinate(1,0,0), new Coordinate(0,0,4)),new RTreeRegion(new Coordinate(0,0,0), new Coordinate(6,6,6), new Coordinate(5,5,5))},
-                {new RTreeRegion(new Coordinate(0,0,0), new Coordinate(0,0,0), new Coordinate(0,0,0)),new RTreeRegion(new Coordinate(0,0,0), new Coordinate(6,6,6), new Coordinate(1,1,1))},
+                {new RTreeRegion(new Coordinate(0d,1d), new Coordinate(1d,0d)), new RTreeRegion(new Coordinate(0d,1d), new Coordinate(1d,0d))},
+                {new RTreeRegion(new Coordinate(0d,1d,0d), new Coordinate(1d,0d,0d), new Coordinate(0d,0d,1d)),new RTreeRegion(new Coordinate(0d,1d,0d), new Coordinate(1d,0d,0d), new Coordinate(0d,0d,1d))},
+                {new RTreeRegion(new Coordinate(0d,1d,0d), new Coordinate(1d,0d,0d), new Coordinate(0d,0d,1d)),new RTreeRegion(new Coordinate(0d,1d,0d), new Coordinate(3d,5d,7d), new Coordinate(3d,3d,3d))},
+                {new RTreeRegion(new Coordinate(0d,1d,0d), new Coordinate(1d,0d,0d), new Coordinate(0d,0d,4d)),new RTreeRegion(new Coordinate(0d,0d,0d), new Coordinate(6d,6d,6d), new Coordinate(5d,5d,5d))},
+                {new RTreeRegion(new Coordinate(0d,0d,0d), new Coordinate(0d,0d,0d), new Coordinate(0d,0d,0d)),new RTreeRegion(new Coordinate(0d,0d,0d), new Coordinate(6d,6d,6d), new Coordinate(1d,1d,1d))},
         };
 
         RTreeRegion[][] objectTargetFalseTestVals = new RTreeRegion[][]{
-                {new RTreeRegion(new Coordinate(0,1,0), new Coordinate(3,5,7)),new RTreeRegion(new Coordinate(0,1,0), new Coordinate(1,0,0))},
-                {new RTreeRegion(new Coordinate(0,0,0), new Coordinate(6,6,6)),new RTreeRegion(new Coordinate(0,1,0), new Coordinate(1,0,0))},
-                {new RTreeRegion(new Coordinate(0,0,0), new Coordinate(6,6,6)),new RTreeRegion(new Coordinate(0,0,0), new Coordinate(0,0,0))},
+                {new RTreeRegion(new Coordinate(0d,1d,0d), new Coordinate(3d,5d,7d)),new RTreeRegion(new Coordinate(0d,1d,0d), new Coordinate(1d,0d,0d))},
+                {new RTreeRegion(new Coordinate(0d,0d,0d), new Coordinate(6d,6d,6d)),new RTreeRegion(new Coordinate(0d,1d,0d), new Coordinate(1d,0d,0d))},
+                {new RTreeRegion(new Coordinate(0d,0d,0d), new Coordinate(6d,6d,6d)),new RTreeRegion(new Coordinate(0d,0d,0d), new Coordinate(0d,0d,0d))},
         };
 
 

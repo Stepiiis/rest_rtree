@@ -14,11 +14,11 @@ class FileHandlingUtilTest {
 	void testLoadObjectsIntoArray() {
 		String path = "src/test/resources/testFileHandlingUtil.txt";
 		List<RTreeRegion> expRes = List.of(
-				new RTreeRegion(new Coordinate(11,11), new Coordinate(16,11)),
-				new RTreeRegion(new Coordinate(13,15), new Coordinate(16,20)),
-				new RTreeRegion(new Coordinate(20,5), new Coordinate(20,5)),
-				new RTreeRegion(new Coordinate(10,20), new Coordinate(20,20)),
-				new RTreeRegion(new Coordinate(7,18), new Coordinate(11,18))
+				new RTreeRegion(new Coordinate(11d,11d), new Coordinate(16d,11d)),
+				new RTreeRegion(new Coordinate(13d,15d), new Coordinate(16d,20d)),
+				new RTreeRegion(new Coordinate(20d,5d), new Coordinate(20d,5d)),
+				new RTreeRegion(new Coordinate(10d,20d), new Coordinate(20d,20d)),
+				new RTreeRegion(new Coordinate(7d,18d), new Coordinate(11d,18d))
 		);
 		List<RTreeRegion> regions = FileHandlingUtil.loadObjectsIntoArray(path, 2);
 		assertEquals(5, regions.size());

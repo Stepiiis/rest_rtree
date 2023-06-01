@@ -209,12 +209,15 @@ public class FileHandlingUtil {
 	 *
 	 * @param indexFolder
 	 */
-	public static void deleteDirectory(String indexFolder, boolean leaveRoot) {
+	public static void deleteDirectory(String indexFolder, boolean leaveRoot, boolean leaveSequence) {
 		File file = new File(indexFolder);
 		if (file.isDirectory()) {
 			for (File f : Objects.requireNonNull(file.listFiles())) {
 				if (f.isDirectory())
-					deleteDirectory(f.getAbsolutePath(), false);
+					deleteDirectory(f.getAbsolutePath(), false, leaveSequence);
+				if(leaveSequence)
+					if(f.getName().equals("sequence.bin"))
+						continue;
 				if (! f.delete())
 					throw new DatabaseException("Could not delete file: " + f.getAbsolutePath());
 			}

@@ -37,6 +37,6 @@ class PersistentCachedDatabaseTest {
 		for(RTreeNode node : nodes){
 			assertEquals(node, db.getNode(node.getId()));
 		}
-		db.clearDatabase(false);
+		db.clearDatabase(false, false);
 	}
 }

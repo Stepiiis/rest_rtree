@@ -3,7 +3,8 @@ package cz.cvut.fit.wi.beranst6.rtreedb.modules;
 import cz.cvut.fit.wi.beranst6.rtreedb.config.TreeConfig;
 import cz.cvut.fit.wi.beranst6.rtreedb.modules.utils.Coordinate;
 import cz.cvut.fit.wi.beranst6.rtreedb.persistent.PersistentCachedDatabase;
-import cz.cvut.fit.wi.beranst6.rtreedb.persistent.sequence.InMemorySequenceGenerator;
+import cz.cvut.fit.wi.beranst6.rtreedb.persistent.sequence.PersistentSequenceGenerator;
+import cz.cvut.fit.wi.beranst6.rtreedb.persistent.sequence.SequenceGeneratorInterface;
 import cz.cvut.fit.wi.beranst6.rtreedb.persistent.util.FileHandlingUtil;
 import org.junit.jupiter.api.*;
 
@@ -19,29 +20,32 @@ class RTreeTest {
 
 	TreeConfig config = new TreeConfig((byte)2,(byte)2);
 	private PersistentCachedDatabase db;
+	private SequenceGeneratorInterface sequence;
 
 
 	@BeforeEach
 	void setup(){
-		db = new PersistentCachedDatabase(10, config, new InMemorySequenceGenerator(), "testDb");
-		db.clearDatabase(true);
+		 sequence = new PersistentSequenceGenerator("testDb");
+		db = new PersistentCachedDatabase(10, config, sequence, "testDb");
+		db.clearDatabase(true, true);
 	}
 
 	@AfterEach()
 	void cleanUp(){
-		db.clearDatabase(false);
+		db.clearDatabase(false, false);
 	}
 
 	@Test
 	void testInsert() {
 		RTree tree = new RTree(config, db);
 		List<RTreeRegion> expRes = List.of(
-				new RTreeRegion(new Coordinate(11,11), new Coordinate(16,11)),
-				new RTreeRegion(new Coordinate(13,15), new Coordinate(16,20)),
-				new RTreeRegion(new Coordinate(20,5), new Coordinate(20,5)),
-				new RTreeRegion(new Coordinate(10,20), new Coordinate(20,20)),
-				new RTreeRegion(new Coordinate(7,18), new Coordinate(11,18))
+				new RTreeRegion(new Coordinate(11d,11d), new Coordinate(16d,11d)),
+				new RTreeRegion(new Coordinate(13d,15d), new Coordinate(16d,20d)),
+				new RTreeRegion(new Coordinate(20d,5d), new Coordinate(20d,5d)),
+				new RTreeRegion(new Coordinate(10d,20d), new Coordinate(20d,20d)),
+				new RTreeRegion(new Coordinate(7d,18d), new Coordinate(11d,18d))
 		);
+		sequence.getCurrentValue();
 //		long start = System.currentTimeMillis();
 		for(RTreeRegion region : expRes){
 			tree.insert(region);
@@ -59,7 +63,7 @@ class RTreeTest {
 //		System.out.println("Searching "+ expRes.size()*2 +" elements took " + timeElapsed + " ms");
 
 
-		RTreeRegion allBounded = new RTreeRegion(new Coordinate(0, 0), new Coordinate(20, 20));
+		RTreeRegion allBounded = new RTreeRegion(new Coordinate(0d, 0d), new Coordinate(20d, 20d));
 		List<RTreeNode> res = tree.rangeQuery(allBounded);
 		assertEquals(5, res.size());
 
@@ -67,32 +71,34 @@ class RTreeTest {
 		RTreeRegion[] sortedRes = res.stream().map(RTreeNode::getMbr).sorted(Comparator.comparingDouble(val -> val.getBoundingRect().getMinByAxis(0))).toArray(RTreeRegion[]::new);
 		assertArrayEquals(sorted,sortedRes);
 
-		List<RTreeNode> kNNRes = tree.kNN(new Coordinate(0,0), 5, kNNType.BRANCH_AND_BOUND);
+		res = tree.rangeQuery(new RTreeRegion(new Coordinate(10d,10d), new Coordinate(20d,20d)));
+		assertEquals(2, res.size());
+
+		List<RTreeNode> kNNRes = tree.kNN(new Coordinate(0d,0d), 5, kNNType.BETTER_BFS);
 		assertEquals(5, kNNRes.size());
-		kNNRes = tree.kNN(new Coordinate(0,0), 4, kNNType.BRANCH_AND_BOUND);
+		kNNRes = tree.kNN(new Coordinate(0d,0d), 4, kNNType.BETTER_BFS);
 		assertEquals(4, kNNRes.size());
-		kNNRes = tree.kNN(new Coordinate(0,0), 3, kNNType.BRANCH_AND_BOUND);
+		kNNRes = tree.kNN(new Coordinate(0d,0d), 3, kNNType.BETTER_BFS);
 		assertEquals(3, kNNRes.size());
-		kNNRes = tree.kNN(new Coordinate(0,0), 2, kNNType.BRANCH_AND_BOUND);
+		kNNRes = tree.kNN(new Coordinate(0d,0d), 2, kNNType.BETTER_BFS);
 		assertEquals(2, kNNRes.size());
 
-		db.clearDatabase(false);
 	}
 
 	@Test
 	void testDelete(){
 		RTree tree = new RTree(config, db);
 		List<RTreeRegion> expRes = List.of(
-				new RTreeRegion(new Coordinate(11,11), new Coordinate(16,11)),
-				new RTreeRegion(new Coordinate(13,15), new Coordinate(16,20)),
-				new RTreeRegion(new Coordinate(20,5), new Coordinate(20,5)),
-				new RTreeRegion(new Coordinate(10,20), new Coordinate(20,20)),
-				new RTreeRegion(new Coordinate(7,18), new Coordinate(11,18))
+				new RTreeRegion(new Coordinate(11d,11d), new Coordinate(16d,11d)),
+				new RTreeRegion(new Coordinate(13d,15d), new Coordinate(16d,20d)),
+				new RTreeRegion(new Coordinate(20d,5d), new Coordinate(20d,5d)),
+				new RTreeRegion(new Coordinate(10d,20d), new Coordinate(20d,20d)),
+				new RTreeRegion(new Coordinate(7d,18d), new Coordinate(11d,18d))
 		);
 		for(RTreeRegion region : expRes){
 			tree.insert(region);
 		}
-		RTreeRegion allBound = new RTreeRegion(new Coordinate(0, 0), new Coordinate(20, 20));
+		RTreeRegion allBound = new RTreeRegion(new Coordinate(0d, 0d), new Coordinate(20d, 20d));
 
 		for(int i = 0 ; i < expRes.size(); i++){
 			tree.delete(expRes.get(i));
@@ -106,11 +112,11 @@ class RTreeTest {
 		TreeConfig configMulti = new TreeConfig((byte)3,(byte)2);
 		RTree tree = new RTree(configMulti, db);
 		List<RTreeRegion> expRes = List.of(
-				new RTreeRegion(new Coordinate(11,11), new Coordinate(16,11)),
-				new RTreeRegion(new Coordinate(13,15), new Coordinate(16,20)),
-				new RTreeRegion(new Coordinate(20,5), new Coordinate(20,5)),
-				new RTreeRegion(new Coordinate(10,20), new Coordinate(20,20)),
-				new RTreeRegion(new Coordinate(7,18), new Coordinate(11,18))
+				new RTreeRegion(new Coordinate(11d,11d), new Coordinate(16d,11d)),
+				new RTreeRegion(new Coordinate(13d,15d), new Coordinate(16d,20d)),
+				new RTreeRegion(new Coordinate(20d,5d), new Coordinate(20d,5d)),
+				new RTreeRegion(new Coordinate(10d,20d), new Coordinate(20d,20d)),
+				new RTreeRegion(new Coordinate(7d,18d), new Coordinate(11d,18d))
 		);
 		for(RTreeRegion region : expRes){
 			tree.insert(region);
@@ -120,7 +126,7 @@ class RTreeTest {
 			assertEquals(region, tree.search(region).get(0).getMbr());
 		}
 
-		RTreeRegion allBounded = new RTreeRegion(new Coordinate(0, 0), new Coordinate(20, 20));
+		RTreeRegion allBounded = new RTreeRegion(new Coordinate(0d, 0d), new Coordinate(20d, 20d));
 		List<RTreeNode> res = tree.rangeQuery(allBounded);
 		assertEquals(5, res.size());
 
@@ -128,29 +134,28 @@ class RTreeTest {
 		RTreeRegion[] sortedRes = res.stream().map(RTreeNode::getMbr).sorted(Comparator.comparingDouble(val -> val.getBoundingRect().getMinByAxis(0))).toArray(RTreeRegion[]::new);
 		assertArrayEquals(sorted,sortedRes);
 
-		List<RTreeNode> kNNRes = tree.kNN(new Coordinate(0,0), 5, kNNType.BRANCH_AND_BOUND);
+		List<RTreeNode> kNNRes = tree.kNN(new Coordinate(0d,0d), 5, kNNType.BETTER_BFS);
 		assertEquals(5, kNNRes.size());
-		kNNRes = tree.kNN(new Coordinate(0,0), 4, kNNType.BRANCH_AND_BOUND);
+		kNNRes = tree.kNN(new Coordinate(0d,0d), 4, kNNType.BETTER_BFS);
 		assertEquals(4, kNNRes.size());
-		kNNRes = tree.kNN(new Coordinate(0,0), 3, kNNType.BRANCH_AND_BOUND);
+		kNNRes = tree.kNN(new Coordinate(0d,0d), 3, kNNType.BETTER_BFS);
 		assertEquals(3, kNNRes.size());
-		kNNRes = tree.kNN(new Coordinate(0,0), 2, kNNType.BRANCH_AND_BOUND);
+		kNNRes = tree.kNN(new Coordinate(0d,0d), 2, kNNType.BETTER_BFS);
 		assertEquals(2, kNNRes.size());
 
-		db.clearDatabase(false);
 	}
 
 	@Test
 	void test3Ddata(){
 		TreeConfig configMulti = new TreeConfig((byte)3,(byte)3);
-		PersistentCachedDatabase  db3d = new PersistentCachedDatabase(10, configMulti, new InMemorySequenceGenerator(), "testDb");
+		PersistentCachedDatabase  db3d = new PersistentCachedDatabase(10, configMulti, new PersistentSequenceGenerator("testDb"), "testDb");
 		RTree tree = new RTree(configMulti, db3d);
 		List<RTreeRegion> expRes = List.of(
-				new RTreeRegion(new Coordinate(11,11,11), new Coordinate(16,11,11)),
-				new RTreeRegion(new Coordinate(13,15,15), new Coordinate(16,20,20)),
-				new RTreeRegion(new Coordinate(20,5,5), new Coordinate(20,5,5)),
-				new RTreeRegion(new Coordinate(10,20,20), new Coordinate(20,20,20)),
-				new RTreeRegion(new Coordinate(7,18,18), new Coordinate(11,18,18))
+				new RTreeRegion(new Coordinate(11d,11d,11d), new Coordinate(16d,11d,11d)),
+				new RTreeRegion(new Coordinate(13d,15d,15d), new Coordinate(16d,20d,20d)),
+				new RTreeRegion(new Coordinate(20d,5d,5d), new Coordinate(20d,5d,5d)),
+				new RTreeRegion(new Coordinate(10d,20d,20d), new Coordinate(20d,20d,20d)),
+				new RTreeRegion(new Coordinate(7d,18d,18d), new Coordinate(11d,18d,18d))
 		);
 		for(RTreeRegion region : expRes){
 			tree.insert(region);
@@ -161,7 +166,7 @@ class RTreeTest {
 			assertEquals(region, tree.search(region).get(0).getMbr());
 		}
 
-		RTreeRegion allBounded = new RTreeRegion(new Coordinate(0, 0), new Coordinate(20, 20));
+		RTreeRegion allBounded = new RTreeRegion(new Coordinate(0d, 0d), new Coordinate(20d, 20d));
 		List<RTreeNode> res = tree.rangeQuery(allBounded);
 		assertEquals(5, res.size());
 
@@ -169,34 +174,32 @@ class RTreeTest {
 		RTreeRegion[] sortedRes = res.stream().map(RTreeNode::getMbr).sorted(Comparator.comparingDouble(val -> val.getBoundingRect().getMinByAxis(0))).toArray(RTreeRegion[]::new);
 		assertArrayEquals(sorted,sortedRes);
 
-		List<RTreeNode> kNNRes = tree.kNN(new Coordinate(0,0), 5, kNNType.BRANCH_AND_BOUND);
+		List<RTreeNode> kNNRes = tree.kNN(new Coordinate(0d,0d), 5, kNNType.BETTER_BFS);
 		assertEquals(5, kNNRes.size());
-		kNNRes = tree.kNN(new Coordinate(0,0), 4, kNNType.BRANCH_AND_BOUND);
+		kNNRes = tree.kNN(new Coordinate(0d,0d), 4, kNNType.BETTER_BFS);
 		assertEquals(4, kNNRes.size());
-		kNNRes = tree.kNN(new Coordinate(0,0), 3, kNNType.BRANCH_AND_BOUND);
+		kNNRes = tree.kNN(new Coordinate(0d,0d), 3, kNNType.BETTER_BFS);
 		assertEquals(3, kNNRes.size());
-		kNNRes = tree.kNN(new Coordinate(0,0), 2, kNNType.BRANCH_AND_BOUND);
+		kNNRes = tree.kNN(new Coordinate(0d,0d), 2, kNNType.BETTER_BFS);
 		assertEquals(2, kNNRes.size());
 
-		RTreeRegion allBound = new RTreeRegion(new Coordinate(0, 0), new Coordinate(20, 20));
+		RTreeRegion allBound = new RTreeRegion(new Coordinate(0d, 0d), new Coordinate(20d, 20d));
 
 		for(int i = 0 ; i < expRes.size(); i++){
 			tree.delete(expRes.get(i));
 			List<RTreeNode> resRange = tree.rangeQuery(allBound);
 			assertEquals(expRes.size()-(i+1), resRange.size());
 		}
-
-		db3d.clearDatabase(false);
 	}
 
 
 	@Test
 	void performanceTest(){
-		TreeConfig configMulti = new TreeConfig((byte)30,(byte)2);
-		PersistentCachedDatabase  dbMulti = new PersistentCachedDatabase(20000, configMulti, new InMemorySequenceGenerator(), "testDb");
+		TreeConfig configMulti = new TreeConfig((byte)30,(byte)5);
+		PersistentCachedDatabase  dbMulti = new PersistentCachedDatabase(20000, configMulti, new PersistentSequenceGenerator("testDb"), "testDb");
 		RTree tree = new RTree(configMulti, dbMulti);
 
-		List<RTreeRegion> objects = FileHandlingUtil.loadObjectsIntoArray("src/test/resources/performance_2D",2);
+		List<RTreeRegion> objects = FileHandlingUtil.loadObjectsIntoArray("src/test/resources/performance_5D",5);
 
 		int queryCnt = objects.size() / 10;
 		Random rand = new Random(System.currentTimeMillis());
