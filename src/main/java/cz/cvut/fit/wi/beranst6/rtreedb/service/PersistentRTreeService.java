@@ -12,6 +12,7 @@ import cz.cvut.fit.wi.beranst6.rtreedb.modules.kNNType;
 import cz.cvut.fit.wi.beranst6.rtreedb.modules.utils.BoundingBox;
 import cz.cvut.fit.wi.beranst6.rtreedb.modules.utils.Coordinate;
 import cz.cvut.fit.wi.beranst6.rtreedb.persistent.DatabaseInterface;
+import cz.cvut.fit.wi.beranst6.rtreedb.persistent.IOMonitoring;
 import cz.cvut.fit.wi.beranst6.rtreedb.persistent.PersistentCachedDatabase;
 import cz.cvut.fit.wi.beranst6.rtreedb.persistent.sequence.PersistentSequenceGenerator;
 import cz.cvut.fit.wi.beranst6.rtreedb.persistent.sequence.SequenceGeneratorInterface;
@@ -36,7 +37,8 @@ public class PersistentRTreeService {
 			id = dto.id();
 		TreeConfig config = new TreeConfig(dto.nodeCapacity(),dto.dimension());
 		SequenceGeneratorInterface sequence = new PersistentSequenceGenerator(dto.dbName());
-		DatabaseInterface db = new PersistentCachedDatabase(dto.cacheSize(), config, sequence, dto.dbName()+id);
+		IOMonitoring io = new IOMonitoring();
+		DatabaseInterface db = new PersistentCachedDatabase(dto.cacheSize(), config, sequence, dto.dbName()+id, io);
 		RTree tree = new RTree(config, db);
 		treeMap.put(id, tree);
 		return ResponseEntity.ok(id);

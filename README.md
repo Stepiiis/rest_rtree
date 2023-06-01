@@ -1,5 +1,7 @@
 # R - Tree with REST API
 ### Overview
- - Persistent database of 2D or 3D objects which is cached and retrieved as needed. 
- - Objects in database can be rectangles, or points for 2D database or additionally cubes in 3D database.
- - Provides REST API for kNN (k nearest neighbors), and region query.
+ - Persistent database of n dimensional objects which is cached and retrieved as needed.
+ - Indexing is done using R-Tree.
+ - Objects in database can be points or hyper cuboids given in a format of axis aligned bounding boxes.
+ - Provides REST API for connection to new database or already established database, kNN query, and region query.
+ - Inserts return IDs od the object inserted unique to the database.

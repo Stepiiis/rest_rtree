@@ -15,7 +15,8 @@ class CachedDatabaseTest {
     @Test
     void testPutAndGet() {
         TreeConfig config = new TreeConfig((byte)2,(byte)2);
-        PersistentCachedDatabase db = new PersistentCachedDatabase(10, config, new InMemorySequenceGenerator(), "testDb");
+        IOMonitoring monitoring = new IOMonitoring();
+        PersistentCachedDatabase db = new PersistentCachedDatabase(10, config, new InMemorySequenceGenerator(), "testDb",monitoring);
         RTreeNode node = new RTreeNode(5,new RTreeRegion(new Coordinate(1d,1d),new Coordinate(3d,3d)));
         db.putNode(node);
         RTreeNode child = new RTreeNode(6, new RTreeRegion(new Coordinate(1d,1d), new Coordinate(2d,2d)));

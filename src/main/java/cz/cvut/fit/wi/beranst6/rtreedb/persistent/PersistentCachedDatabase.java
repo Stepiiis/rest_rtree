@@ -23,11 +23,13 @@ public class PersistentCachedDatabase implements DatabaseInterface {
 	private final SequenceGeneratorInterface sequenceGen;
 	private final String indexFolderPath;
 	private Integer rootId = null;
+	private final IOMonitoring monitoring;
 
-	public PersistentCachedDatabase(int cacheSize, TreeConfig config, SequenceGeneratorInterface sequenceGen, String indexFolder) {
+	public PersistentCachedDatabase(int cacheSize, TreeConfig config, SequenceGeneratorInterface sequenceGen, String indexFolder, IOMonitoring monitoring) {
 		cachedDB = new RTreeNode[cacheSize];
 		this.config = config;
 		this.sequenceGen = sequenceGen;
+		this.monitoring = monitoring;
 		this.indexFolderPath = "db/" + indexFolder;
 		nullifyCache();
 		try {
@@ -64,7 +66,8 @@ public class PersistentCachedDatabase implements DatabaseInterface {
 
 	public RTreeNode getNodeFromFile(int id, boolean shouldLog) {
 		String fileName = getNodeFilePath(id);
-		return FileHandlingUtil.handleFileOperation(fileName, "r", shouldLog?this.LOGG:null, rFile -> {
+		monitoring.hitRead();
+		return FileHandlingUtil.handleFileOperation(fileName, "r", shouldLog ? this.LOGG : null, rFile -> {
 			ArrayList<RTreeNode> children = new ArrayList<>();
 			RTreeNode foundNode = new RTreeNode(id);
 			IndexRecord record = new IndexRecord();
@@ -72,7 +75,7 @@ public class PersistentCachedDatabase implements DatabaseInterface {
 				throw new DatabaseException("Index record in file " + fileName + " is invalid");
 			}
 			foundNode.setParentId(record.getParentId());
-			for (int i = record.getHeaderSize() + record.getMbrSize(), u = 0; u < record.getNodeCount(); i += record.getNodeSize(), ++u) {
+			for (int i = record.getHeaderSize() + record.getMbrSize(), u = 0; u < record.getNodeCount(); i += record.getNodeSize(), ++ u) {
 				// Child only contains bounding boxes of child nodes along with their ids. Further loading of child nodes has to be done manually if needed
 				RTreeNode loadedChild = loadChild(rFile, i, config);
 				if (loadedChild != null) { // means that record is invalid
@@ -97,7 +100,7 @@ public class PersistentCachedDatabase implements DatabaseInterface {
 		String fileName = getNodeFilePath(node.getId());
 		handleFileOperation(fileName, "rw", LOGG, (file) -> {
 			IndexRecord record = new IndexRecord();
-			if (!loadRecordHeaderFromFile(record, file, config))
+			if (! loadRecordHeaderFromFile(record, file, config))
 				throw new DatabaseException("Index record in file " + fileName + " is invalid");
 			file.seek(0);
 			updateIndexHeader(node, file, config);
@@ -145,9 +148,9 @@ public class PersistentCachedDatabase implements DatabaseInterface {
 
 	@Override
 	public void clearDatabase(boolean leaveFolder, boolean leaveSequence) {
-		FileHandlingUtil.deleteDirectory(indexFolderPath,leaveFolder, leaveSequence);
+		FileHandlingUtil.deleteDirectory(indexFolderPath, leaveFolder, leaveSequence);
 		nullifyCache();
-		if(!leaveSequence){
+		if (! leaveSequence) {
 			sequenceGen.reset();
 		}
 		rootId = null;
@@ -182,7 +185,7 @@ public class PersistentCachedDatabase implements DatabaseInterface {
 	}
 
 	public static RTreeNode loadChild(RandomAccessFile file, int readStartPos, TreeConfig config) throws IOException {
-		file.seek(readStartPos+CHILD_NODE_STATUS_POS);
+		file.seek(readStartPos + CHILD_NODE_STATUS_POS);
 		byte status = file.readByte();
 		if (isNodeInvalid(status)) return null;
 		file.seek(readStartPos + CHILD_NODE_ID_POS);
@@ -195,7 +198,7 @@ public class PersistentCachedDatabase implements DatabaseInterface {
 
 	@Override
 	public RTreeNode getNode(int id) {
-		if(id == 0)
+		if (id == 0)
 			return null;
 		RTreeNode node = getNodeFromCache(id);
 		if (node == null || node.getId() != id)
@@ -266,6 +269,7 @@ public class PersistentCachedDatabase implements DatabaseInterface {
 
 	public void putNode(RTreeNode object) {
 		putNewRecord(object);
+		monitoring.hitWrite();
 		saveToCache(object);
 	}
 
@@ -284,6 +288,7 @@ public class PersistentCachedDatabase implements DatabaseInterface {
 		node.addChild(child);
 		saveToCache(node);
 
+		monitoring.hitWrite();
 		return handleFileOperation(fileName, "rw", this.LOGG, randFile -> {
 			// try to overwrite invalidated record inside the file first
 			for (int i = record.getHeaderSize() + record.getMbrSize(), u = 0; u < record.getNodeCount(); i += record.getNodeSize(), ++ u) {
@@ -326,14 +331,15 @@ public class PersistentCachedDatabase implements DatabaseInterface {
 	@Override
 	public boolean updateChildInParent(RTreeNode parent, RTreeNode child) {
 		invalidateCached(parent.getId());
+		monitoring.hitWrite();
 		String fileName = getNodeFilePath(parent.getId());
 		IndexRecord record = loadIndexRecord(fileName);
 		return handleFileOperation(fileName, "rw", this.LOGG, randFile -> {
-			if(parent.getMbr() != null)
-				if(record.getMbr() != null && !parent.getMbr().equals(record.getMbr()))
-				putMBR(INDEX_HEADER_SIZE, parent.getMbr(), randFile, config);
-			else if(parent.getMbr() == null)
-				invalidateMBRInIndex(0, record.getStatusByte(), randFile);
+			if (parent.getMbr() != null)
+				if (record.getMbr() != null && ! parent.getMbr().equals(record.getMbr()))
+					putMBR(INDEX_HEADER_SIZE, parent.getMbr(), randFile, config);
+				else if (parent.getMbr() == null)
+					invalidateMBRInIndex(0, record.getStatusByte(), randFile);
 			// try to overwrite invalidated record inside the file first
 			for (int i = record.getHeaderSize() + record.getMbrSize(), u = 0; u < record.getNodeCount(); i += record.getNodeSize(), ++ u) {
 				randFile.seek(i);
@@ -359,22 +365,22 @@ public class PersistentCachedDatabase implements DatabaseInterface {
 	 */
 	@Override
 	public boolean deleteChildById(RTreeNode parent, int childId) {
-		if(parent == null)
+		if (parent == null)
 			return false;
 		String filePath = getNodeFilePath(parent.getId());
-
+		monitoring.hitWrite();
 		invalidateCached(parent.getId());
 		invalidateCached(childId);
 		return handleFileOperation(filePath, "rw", this.LOGG, file -> {
 			IndexRecord record = new IndexRecord();
 			loadRecordHeaderFromFile(record, file, config);
-			if(parent.getMbr() != null)
+			if (parent.getMbr() != null)
 				putMBR(record.getHeaderSize(), parent.getMbr(), file, config);
-			else{
+			else {
 				invalidateMBRInIndex(0, record.getStatusByte(), file);
 			}
 
-			for (int i = record.getHeaderSize()+record.getMbrSize(), u = 0 ; u < record.getNodeCount(); i += record.getNodeSize(), ++u) {
+			for (int i = record.getHeaderSize() + record.getMbrSize(), u = 0; u < record.getNodeCount(); i += record.getNodeSize(), ++ u) {
 				int id = loadChildId(file, i);
 				if (id == childId) {
 					invalidateNode(file, i);
@@ -432,7 +438,7 @@ public class PersistentCachedDatabase implements DatabaseInterface {
 		// todo improve so that we dont need to read the node from db and rely on exceptions
 		try {
 			RTreeNode node = getNodeFromFile(id, false); // if node is not in db, it is a leaf record of a leaf node only stored in parent node
-			if(node.getChildren().size() > 0)
+			if (node.getChildren().size() > 0)
 				tryReadingNode(node.getChildByIndex(0).getId()); // if child is not in db, it is a leaf node
 			else return false;
 		} catch (DatabaseException e) {
@@ -441,22 +447,23 @@ public class PersistentCachedDatabase implements DatabaseInterface {
 		return false;
 	}
 
-	private void tryReadingNode(int id){
+	private void tryReadingNode(int id) {
 		String fileName = getNodeFilePath(id);
+		monitoring.hitRead();
 		FileHandlingUtil.handleFileOperation(fileName, "r", rFile -> null);
 	}
 
-    @Override
-    public boolean isIndex(int id) {
-        try {
+	@Override
+	public boolean isIndex(int id) {
+		try {
 			tryReadingNode(id); // if node is not in db, it is a leaf record or an indexed record only stored in parent node
 		} catch (DatabaseException e) {
 			return false;
 		}
 		return true;
-    }
+	}
 
-    @Override
+	@Override
 	public int getNextId() {
 		return sequenceGen.getAndIncrease();
 	}
@@ -479,6 +486,7 @@ public class PersistentCachedDatabase implements DatabaseInterface {
 	private void saveToCache(RTreeNode node) {
 		cachedDB[node.getId() % cachedDB.length] = node;
 	}
+
 	public void saveToCache(int id, RTreeNode node) {
 		int index = id % cachedDB.length;
 		cachedDB[index] = node;

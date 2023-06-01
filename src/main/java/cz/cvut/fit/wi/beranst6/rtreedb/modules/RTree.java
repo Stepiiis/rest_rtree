@@ -184,21 +184,21 @@ public class RTree {
 
 	public int insert(RTreeRegion region) {
 		int id = db.getNextId();
-		insert(new RTreeNode(id, region), true);
-		return id;
+		return insert(new RTreeNode(id, region), true);
 	}
 
 	public int insert(BoundingBox box) {
 		return insert(new RTreeRegion(box));
 	}
 
-	protected void insert(RTreeNode node, boolean increaseDepth) {
+	protected int insert(RTreeNode node, boolean increaseDepth) {
 		if (getRoot() == null) // tree empty
 		{
 			root = node;
-			root.addChild(new RTreeNode(db.getNextId(), node.getMbr().copy()));
+			int id = db.getNextId();
+			root.addChild(new RTreeNode(id, node.getMbr().copy()));
 			db.saveNewRoot(root);
-			return;
+			return id;
 		}
 		RTreeNode leaf = chooseNode(node, increaseDepth);
 		leaf = db.getNode(leaf.getId());
@@ -228,6 +228,7 @@ public class RTree {
 			if (! splitRoot)
 				adjustTree(pair);
 		}
+		return node.getId();
 	}
 
 	/**

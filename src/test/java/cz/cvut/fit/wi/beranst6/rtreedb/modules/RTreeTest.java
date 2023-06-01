@@ -2,7 +2,10 @@ package cz.cvut.fit.wi.beranst6.rtreedb.modules;
 
 import cz.cvut.fit.wi.beranst6.rtreedb.config.TreeConfig;
 import cz.cvut.fit.wi.beranst6.rtreedb.modules.utils.Coordinate;
+import cz.cvut.fit.wi.beranst6.rtreedb.persistent.IOMonitoring;
+import cz.cvut.fit.wi.beranst6.rtreedb.persistent.LinearDB;
 import cz.cvut.fit.wi.beranst6.rtreedb.persistent.PersistentCachedDatabase;
+import cz.cvut.fit.wi.beranst6.rtreedb.persistent.sequence.InMemorySequenceGenerator;
 import cz.cvut.fit.wi.beranst6.rtreedb.persistent.sequence.PersistentSequenceGenerator;
 import cz.cvut.fit.wi.beranst6.rtreedb.persistent.sequence.SequenceGeneratorInterface;
 import cz.cvut.fit.wi.beranst6.rtreedb.persistent.util.FileHandlingUtil;
@@ -26,7 +29,8 @@ class RTreeTest {
 	@BeforeEach
 	void setup(){
 		 sequence = new PersistentSequenceGenerator("testDb");
-		db = new PersistentCachedDatabase(10, config, sequence, "testDb");
+		 IOMonitoring monitoring = new IOMonitoring();
+		db = new PersistentCachedDatabase(10, config, sequence, "testDb", monitoring);
 		db.clearDatabase(true, true);
 	}
 
@@ -148,7 +152,8 @@ class RTreeTest {
 	@Test
 	void test3Ddata(){
 		TreeConfig configMulti = new TreeConfig((byte)3,(byte)3);
-		PersistentCachedDatabase  db3d = new PersistentCachedDatabase(10, configMulti, new PersistentSequenceGenerator("testDb"), "testDb");
+		IOMonitoring monitoring = new IOMonitoring();
+		PersistentCachedDatabase  db3d = new PersistentCachedDatabase(10, configMulti, new PersistentSequenceGenerator("testDb"), "testDb", monitoring);
 		RTree tree = new RTree(configMulti, db3d);
 		List<RTreeRegion> expRes = List.of(
 				new RTreeRegion(new Coordinate(11d,11d,11d), new Coordinate(16d,11d,11d)),
@@ -196,23 +201,34 @@ class RTreeTest {
 	@Test
 	void performanceTest(){
 		TreeConfig configMulti = new TreeConfig((byte)30,(byte)5);
-		PersistentCachedDatabase  dbMulti = new PersistentCachedDatabase(20000, configMulti, new PersistentSequenceGenerator("testDb"), "testDb");
+		IOMonitoring monitoring = new IOMonitoring();
+		PersistentCachedDatabase  dbMulti = new PersistentCachedDatabase(20000, configMulti, new PersistentSequenceGenerator("testDb"), "testDb", monitoring);
 		RTree tree = new RTree(configMulti, dbMulti);
 
+		IOMonitoring monitoringLin = new IOMonitoring();
 		List<RTreeRegion> objects = FileHandlingUtil.loadObjectsIntoArray("src/test/resources/performance_5D",5);
+		LinearDB linearDb = new LinearDB(configMulti, "testLinDB", new InMemorySequenceGenerator(),monitoringLin);
 
-		int queryCnt = objects.size() / 10;
-		Random rand = new Random(System.currentTimeMillis());
 		long start = System.currentTimeMillis();
-		for( int i = 0 ; i <  queryCnt ; ++i){
-			int index = rand.nextInt(objects.size());
-			List<RTreeRegion> res = linearFindFittingRegion(objects, objects.get(index));
-			assertNotEquals(0,res.size());
-//			assertEquals(objects.get(i%objects.size()), res);
+		for(RTreeRegion region : objects){
+			linearDb.putNode(region);
 		}
 		long finish = System.currentTimeMillis();
 		long timeElapsed=finish-start;
-		System.out.println("Searching " + queryCnt + " linear search queries took " + timeElapsed + " ms");
+		System.out.println("Inserting "+ objects.size() + " objects into linear DB took " + timeElapsed + " ms");
+		System.out.println("Inserting objects into linear DB contained " + monitoringLin.getTotalIO() + " IO operations");
+		int queryCnt = objects.size() / 10;
+		Random rand = new Random(System.currentTimeMillis());
+		start = System.currentTimeMillis();
+		for( int i = 0 ; i <  queryCnt ; ++i){
+			int index = rand.nextInt(objects.size());
+			List<RTreeRegion> res = linearFindFittingRegion(linearDb, objects.get(index));
+			assertNotEquals(0,res.size());
+//			assertEquals(objects.get(i%objects.size()), res);
+		}
+		finish = System.currentTimeMillis();
+		timeElapsed=finish-start;
+		System.out.println("Searching " + queryCnt + " linear search queries took " + timeElapsed + " ms and contained " + (monitoringLin.getTotalIO()-objects.size()) + " IO operations");
 
 
 
@@ -223,7 +239,8 @@ class RTreeTest {
  		finish = System.currentTimeMillis();
 		timeElapsed = finish - start;
 		System.out.println("Inserting "+ objects.size() +" elements took " + timeElapsed + " ms"); // 10000 = 1,7s, 100000 = 378s
-
+		int insertingIOs=monitoring.getTotalIO();
+		System.out.println("Inserting objects into R-Tree took " + insertingIOs + " IO operations");
 		start = System.currentTimeMillis();
 		for( int i = 0 ; i <  queryCnt ; ++i){
 			List<RTreeNode> res = tree.search(objects.get(i%objects.size()));
@@ -232,15 +249,15 @@ class RTreeTest {
 		finish = System.currentTimeMillis();
 		timeElapsed=finish-start;
 		System.out.println("Searching " + queryCnt + " RTree range queries took " + timeElapsed + " ms");
-
-
-
+		int searchIOs=monitoring.getTotalIO()-insertingIOs;
+		System.out.println("Querying objects in R-Tree took " + searchIOs + " IO operations");
 	}
 
 
-	public List<RTreeRegion> linearFindFittingRegion(List<RTreeRegion> nodes, RTreeRegion region){
+	public List<RTreeRegion> linearFindFittingRegion(LinearDB db, RTreeRegion region){
 		List<RTreeRegion> found = new ArrayList<>();
-		for(RTreeRegion node : nodes){
+		for(int i = 1 ; i < db.getDbSize(); ++i){
+			RTreeRegion node = db.getNode(i);
 			if(node.canFit(region))
 				found.add(node);
 		}

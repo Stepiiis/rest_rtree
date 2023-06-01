@@ -19,7 +19,8 @@ class PersistentCachedDatabaseTest {
 	void testGetAndPutNode() {
 		SequenceGeneratorInterface sequenceGenerator = new InMemorySequenceGenerator();
 		TreeConfig config = new TreeConfig((byte)2,(byte)2);
-		PersistentCachedDatabase db = new PersistentCachedDatabase(10, config, sequenceGenerator, "PersistenceDBTestDB");
+		IOMonitoring monitoring = new IOMonitoring();
+		PersistentCachedDatabase db = new PersistentCachedDatabase(10, config, sequenceGenerator, "PersistenceDBTestDB", monitoring);
 		List<RTreeRegion> regions = List.of(
 				new RTreeRegion(new Coordinate(11d,11d), new Coordinate(16d,11d)),
 				new RTreeRegion(new Coordinate(13d,15d), new Coordinate(16d,20d)),
